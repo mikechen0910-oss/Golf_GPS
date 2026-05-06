@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Taiwan Golf GPS - Pro Navigation</title>
+    <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+    <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
+    <style>
+        :root { --primary: #1b5e20; --accent: #ffeb3b; --active: #00e676; --bg-dark: #121212; --user-blue: #2196F3; }
+        body { margin: 0; font-family: -apple-system, sans-serif; height: 100vh; display: flex; flex-direction: column; background: var(--bg-dark); overflow: hidden; }
+        #map { flex: 1; width: 100%; background: #222; }
+
+        .control-panel { background: white; padding: 12px; border-radius: 20px 20px 0 0; z-index: 900; box-shadow: 0 -5px 20px rgba(0,0,0,0.4); }
+        .row { display: flex; gap: 8px; margin-bottom: 8px; }
+        select { flex: 1; padding: 10px; border-radius: 8px; border: 2px solid var(--primary); font-size: 15px; font-weight: bold; background: #fff; outline: none; }
+        
+        .btn { border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 5px; flex: 1; }
+        .btn-blue { background: #0277bd; color: white; }
+        .btn-orange { background: #ef6c00; color: white; }
+        .btn-green { background: var(--primary); color: white; }
+        
+        .display-card { 
+            background: #1a1a1a; color: #fff; padding: 12px; border-radius: 10px; 
+            display: flex; justify-content: space-between; align-items: center; 
+            border: 3px solid transparent; border-left: 5px solid var(--accent);
+            transition: all 0.2s; cursor: pointer;
+        }
+        .display-card.active { border: 3px solid var(--active); background: #002e1a; }
+        .dist-val { font-size: 38px; font-weight: 900; color: var(--accent); }
+
+        .map-label { 
+            background: white; padding: 6px 12px; border-radius: 20px; 
+            border: 2px solid var(--primary); font-weight: bold; font-size: 13px; 
+            color: var(--primary); white-space: nowrap; 
+            box-shadow: 2px 4px 10px rgba(0,0,0,0.3);
+            cursor: pointer; transition: all 0.2s;
+            pointer-events: auto;
+        }
+
+        /* 定位圖示樣式與動畫 */
+        .user-marker {
+            width: 15px; height: 15px;
+            background: var(--user-blue);
+            border: 3px solid white;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            position: relative;
+        }
+        .user-marker::after {
+            content: '';
+            position: absolute;
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            background: var(--user-blue);
+            animation: pulse 2s infinite;
+            z-index: -1;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(3); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<div class="control-panel">
+    <div class="row">
+        <button class="btn btn-blue" onclick="locateGPS()">📍 我的位置</button>
+        <button class="btn btn-orange" onclick="findCourses()">⛳ 找尋球場</button>
+        <button class="btn btn-green" onclick="scanFacilities()">🌿 掃描設施</button>
+    </div>
+    <div class="row">
+        <select id="hole-select" onchange="renderFeatures()">
+            <option value="all">-- 顯示全場設施 (Hole All) --</option>
+            <script>for(let i=1;i<=18;i++) document.write(`<option value="${i}">第 ${i} 洞 (Hole ${i})</option>`);</script>
+        </select>
+    </div>
+
+    <div class="display-card" id="dist-card" onclick="toggleMeasureMode()">
+        <div><span class="dist-val" id="dist-out">--</span><span style="color:#888; margin-left:5px; font-weight:bold;">YDS</span></div>
+        <div style="text-align:right">
+            <div style="color:var(--accent); font-weight:bold; font-size: 14px;" id="status-title">測距功能關閉</div>
+            <div style="font-size:11px; color:#aaa;" id="info-text">點擊此處啟動測距模式</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const map = new maplibregl.Map({
+        container: 'map',
+        style: {
+            "version": 8,
+            "sources": { "osm": { "type": "raster", "tiles": ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"], "tileSize": 256 } },
+            "layers": [{ "id": "osm", "type": "raster", "source": "osm" }]
+        },
+        center: [121.5, 25.03],
+        zoom: 10
+    });
+
+    let allElements = [];
+    let measurePoints = [];
+    let measureMarkers = [];
+    let courseMarkers = [];
+    let userMarker = null; // 儲存定位圖示物件
+    let isMeasureMode = false;
+
+    // --- 1. 定位功能：取得座標並顯示圖示 ---
+    function locateGPS() {
+        const info = document.getElementById('info-text');
+        info.innerText = "🛰️ 正在取得衛星定位...";
+
+        navigator.geolocation.getCurrentPosition(p => {
+            const lng = p.coords.longitude;
+            const lat = p.coords.latitude;
+
+            // 移除舊的定位標記
+            if (userMarker) userMarker.remove();
+
+            // 建立新的自定義定位標記
+            const el = document.createElement('div');
+            el.className = 'user-marker';
+            
+            userMarker = new maplibregl.Marker({ element: el })
+                .setLngLat([lng, lat])
+                .addTo(map);
+
+            map.flyTo({ center: [lng, lat], zoom: 17, speed: 1.2 });
+            info.innerText = "已更新您的位置";
+            
+            // 定位後自動搜尋周邊球場標籤
+            setTimeout(findCourses, 1200);
+        }, (err) => {
+            info.innerText = "無法取得權限或定位失敗";
+        }, { enableHighAccuracy: true });
+    }
+
+    // --- 2. 找尋球場 (維持標示圖示且點擊飛入) ---
+    async function findCourses() {
+        const info = document.getElementById('info-text');
+        info.innerText = "🔍 搜尋周邊球場標籤...";
+        
+        courseMarkers.forEach(m => m.remove());
+        courseMarkers = [];
+
+        const bounds = map.getBounds();
+        const bbox = `${bounds.getSouth()},${bounds.getWest()},${bounds.getNorth()},${bounds.getEast()}`;
+        const query = `[out:json];(nwr["leisure"="golf_course"](${bbox});nwr["golf"="clubhouse"](${bbox}););out center;`;
+        
+        try {
+            const res = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`);
+            const data = await res.json();
+            
+            data.elements.forEach(el => {
+                const lat = el.lat || (el.center ? el.center.lat : null);
+                const lon = el.lon || (el.center ? el.center.lon : null);
+                if (lat && lon && el.tags && el.tags.name) {
+                    const elDiv = document.createElement('div');
+                    elDiv.className = 'map-label';
+                    elDiv.innerHTML = `⛳ ${el.tags.name}`;
+                    
+                    elDiv.onclick = (e) => {
+                        e.stopPropagation();
+                        if (!isMeasureMode) {
+                            map.flyTo({ center: [lon, lat], zoom: 17 });
+                            info.innerText = `飛往: ${el.tags.name}`;
+                            setTimeout(scanFacilities, 1500);
+                        }
+                    };
+
+                    const marker = new maplibregl.Marker({ element: elDiv }).setLngLat([lon, lat]).addTo(map);
+                    courseMarkers.push(marker);
+                }
+            });
+            info.innerText = `已標記 ${data.elements.length} 個球場`;
+        } catch (err) { info.innerText = "載入標籤失敗"; }
+    }
+
+    // --- 3. 掃描設施 (繪製詳細區域) ---
+    async function scanFacilities() {
+        const info = document.getElementById('info-text');
+        info.innerText = "🌿 正在繪製詳細設施...";
+        
+        const bounds = map.getBounds();
+        const bbox = `${bounds.getSouth()},${bounds.getWest()},${bounds.getNorth()},${bounds.getEast()}`;
+        const query = `[out:json];(nwr["golf"](${bbox});nwr["natural"="water"](${bbox}););out geom;`;
+        
+        try {
+            const res = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`);
+            const data = await res.json();
+            allElements = data.elements;
+            renderFeatures();
+            info.innerText = `掃描完成 (${allElements.length} 個物件)`;
+        } catch (err) { info.innerText = "掃描失敗"; }
+    }
+
+    function renderFeatures() {
+        if (!allElements.length) return;
+        const holeNum = document.getElementById('hole-select').value;
+        const filtered = allElements.filter(el => {
+            if (holeNum === 'all') return true;
+            const ref = el.tags ? (el.tags.ref || el.tags['golf:hole_number']) : null;
+            return ref === holeNum;
+        });
+
+        const features = filtered.map(el => {
+            let type = el.tags ? (el.tags.golf || el.tags.natural || 'other') : 'other';
+            if (el.tags && el.tags.building === 'clubhouse') type = 'clubhouse';
+            return {
+                type: "Feature", 
+                properties: { type: type },
+                geometry: el.type === 'way' && el.geometry ? 
+                    { type: "Polygon", coordinates: [el.geometry.map(g => [g.lon, g.lat])] } : 
+                    { type: "Point", coordinates: [el.lon, el.lat] }
+            };
+        }).filter(f => f.geometry);
+
+        if (map.getLayer('golf-layer')) map.removeLayer('golf-layer');
+        if (map.getSource('golf-src')) map.removeSource('golf-src');
+        map.addSource('golf-src', { type: 'geojson', data: { type: 'FeatureCollection', features: features } });
+        map.addLayer({
+            id: 'golf-layer', type: 'fill', source: 'golf-src',
+            paint: { 'fill-color': ['match', ['get', 'type'], 'green', '#4caf50', 'bunker', '#ffcc80', 'fairway', '#81c784', 'water', '#64b5f6', 'clubhouse', '#ffb300', '#ccc'], 'fill-opacity': 0.5 }
+        });
+    }
+
+    // --- 4. 測距模式 ---
+    function toggleMeasureMode() {
+        isMeasureMode = !isMeasureMode;
+        const card = document.getElementById('dist-card');
+        const statusTitle = document.getElementById('status-title');
+        const info = document.getElementById('info-text');
+        if (isMeasureMode) {
+            card.classList.add('active');
+            statusTitle.innerText = "🎯 測距中...";
+            statusTitle.style.color = "var(--active)";
+            info.innerText = "請在地圖點擊兩點";
+        } else {
+            card.classList.remove('active');
+            statusTitle.innerText = "測距功能關閉";
+            statusTitle.style.color = "var(--accent)";
+            info.innerText = "點擊啟動測距模式";
+            clearMeasure();
+        }
+    }
+
+    function clearMeasure() {
+        measurePoints = [];
+        measureMarkers.forEach(m => m.remove());
+        measureMarkers = [];
+        document.getElementById('dist-out').innerText = "--";
+    }
+
+    map.on('click', (e) => {
+        if (!isMeasureMode) return;
+        if (measurePoints.length >= 2) clearMeasure();
+        const coord = [e.lngLat.lng, e.lngLat.lat];
+        measurePoints.push(coord);
+        const marker = new maplibregl.Marker({ color: measurePoints.length === 1 ? '#00e676' : '#ff1744' }).setLngLat(coord).addTo(map);
+        measureMarkers.push(marker);
+        if (measurePoints.length === 2) {
+            const from = new maplibregl.LngLat(measurePoints[0][0], measurePoints[0][1]);
+            const to = new maplibregl.LngLat(measurePoints[1][0], measurePoints[1][1]);
+            document.getElementById('dist-out').innerText = (from.distanceTo(to) * 1.09361).toFixed(0);
+        }
+    });
+</script>
+</body>
+</html>
