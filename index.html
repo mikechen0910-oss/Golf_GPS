@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Golf GPS - 3D Satellite View</title>
+    <title>Golf GPS - Pro 3D Satellite</title>
     <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
     <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
     <style>
@@ -67,7 +67,7 @@
         <div><span class="dist-val" id="dist-out">--</span><span style="color:#888; margin-left:5px; font-weight:bold;">YDS</span></div>
         <div style="text-align:right">
             <div style="color:var(--accent); font-weight:bold; font-size: 14px;" id="status-title">測距功能關閉</div>
-            <div style="font-size:11px; color:#aaa;" id="info-text">3D 衛星視角已啟動</div>
+            <div style="font-size:11px; color:#aaa;" id="info-text">支援深層縮放無視覺斷層</div>
         </div>
     </div>
 </div>
@@ -82,16 +82,23 @@
                     "type": "raster",
                     "tiles": ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
                     "tileSize": 256,
-                    "attribution": "Tiles &copy; Esri"
+                    "attribution": "Tiles &copy; Esri",
+                    "maxzoom": 18 // 強制快取 18 級圖資，防止放大後出現錯誤
                 }
             },
-            "layers": [{ "id": "satellite", "type": "raster", "source": "satellite" }]
+            "layers": [{ 
+                "id": "satellite", 
+                "type": "raster", 
+                "source": "satellite",
+                "paint": { "raster-resampling": "linear" } 
+            }]
         },
         center: [121.5, 25.03],
         zoom: 10,
-        pitch: 45, // 設定初始傾斜度 (0-85度)
+        maxZoom: 20, // 允許地圖物件進一步放大
+        pitch: 45,
         bearing: 0,
-        antialias: true // 開啟抗鋸齒，讓傾斜後的邊緣更平滑
+        antialias: true
     });
 
     let allElements = [];
@@ -112,21 +119,21 @@
             el.className = 'user-marker';
             userMarker = new maplibregl.Marker({ element: el }).setLngLat([lng, lat]).addTo(map);
             
-            // 飛往位置時保持傾斜視角
             map.flyTo({ 
                 center: [lng, lat], 
                 zoom: 18, 
-                pitch: 50, // 定位時稍微增加傾斜度
-                speed: 1.0,
-                curve: 1.5
+                pitch: 50,
+                speed: 1.2
             });
-            info.innerText = "已更新位置 (3D 視角)";
-        }, null, { enableHighAccuracy: true });
+            info.innerText = "位置已更新";
+        }, (err) => {
+            info.innerText = "定位失敗，請檢查權限";
+        }, { enableHighAccuracy: true });
     }
 
     async function findCourses() {
         const info = document.getElementById('info-text');
-        info.innerText = "🔍 搜尋球場...";
+        info.innerText = "🔍 搜尋附近球場...";
         courseMarkers.forEach(m => m.remove());
         courseMarkers = [];
         const b = map.getBounds();
@@ -138,7 +145,7 @@
             data.elements.forEach(el => {
                 const lat = el.lat || (el.center ? el.center.lat : null);
                 const lon = el.lon || (el.center ? el.center.lon : null);
-                if (lat && lon && el.tags.name) {
+                if (lat && lon && el.tags && el.tags.name) {
                     const div = document.createElement('div');
                     div.className = 'map-label';
                     div.innerHTML = `⛳ ${el.tags.name}`;
@@ -151,12 +158,12 @@
                 }
             });
             info.innerText = `發現 ${data.elements.length} 個球場`;
-        } catch (e) { info.innerText = "搜尋失敗"; }
+        } catch (e) { info.innerText = "連線逾時"; }
     }
 
     async function scanFacilities() {
         const info = document.getElementById('info-text');
-        info.innerText = "🌿 繪製地形設施...";
+        info.innerText = "🌿 疊加地形數據...";
         const b = map.getBounds();
         const bbox = `${b.getSouth()},${b.getWest()},${b.getNorth()},${b.getEast()}`;
         const query = `[out:json];(nwr["golf"](${bbox});nwr["natural"="water"](${bbox}););out geom;`;
@@ -165,7 +172,7 @@
             const data = await res.json();
             allElements = data.elements;
             renderFeatures();
-            info.innerText = `3D 地形掃描完成`;
+            info.innerText = `設施已同步 (3D)`;
         } catch (e) { info.innerText = "掃描失敗"; }
     }
 
@@ -201,10 +208,16 @@
         isMeasureMode = !isMeasureMode;
         const card = document.getElementById('dist-card');
         const st = document.getElementById('status-title');
+        const info = document.getElementById('info-text');
         if (isMeasureMode) {
-            card.classList.add('active'); st.innerText = "🎯 測距中...";
+            card.classList.add('active'); 
+            st.innerText = "🎯 測距中...";
+            info.innerText = "請點擊地圖標記兩點";
         } else {
-            card.classList.remove('active'); st.innerText = "測距功能關閉"; clearMeasure();
+            card.classList.remove('active'); 
+            st.innerText = "測距功能關閉"; 
+            info.innerText = "3D 衛星視角已啟動";
+            clearMeasure();
         }
     }
 
