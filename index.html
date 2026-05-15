@@ -44,6 +44,55 @@
             border-radius: 50%; background: var(--user-blue); animation: pulse 2s infinite; z-index: -1;
         }
         @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(3); opacity: 0; } }
+
+        .scorecard-panel {
+            background: rgba(255,255,255,0.97);
+            border-radius: 16px;
+            padding: 12px;
+            margin-top: 10px;
+            color: #222;
+            border: 1px solid rgba(0,0,0,0.12);
+            max-height: 320px;
+            overflow: auto;
+        }
+        .scorecard-panel h3 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            color: var(--primary);
+        }
+        .scorecard-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+        .scorecard-table th,
+        .scorecard-table td {
+            padding: 6px 8px;
+            border-bottom: 1px solid rgba(0,0,0,0.08);
+            text-align: center;
+        }
+        .scorecard-table th {
+            background: rgba(33,150,243,0.1);
+            color: #0d47a1;
+            font-weight: 700;
+        }
+        .scorecard-row.active {
+            background: rgba(255,235,59,0.3);
+        }
+        .scorecard-summary {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+        .scorecard-summary span {
+            flex: 1 1 120px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            padding: 8px;
+            font-size: 13px;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
@@ -55,23 +104,27 @@
         <button class="btn btn-blue" onclick="locateGPS()">📍 我的位置</button>
         <button class="btn btn-orange" onclick="findCourses()">⛳ 找尋球場</button>
         <button class="btn btn-green" onclick="scanFacilities()">🌿 掃描設施</button>
+        <button class="btn btn-blue" onclick="toggleScorecard()">📋 分數卡</button>
     </div>
     <div class="row">
-            <button class="btn btn-blue" onclick="toggleTrail()">🚶 軌跡記錄</button>
-            <button class="btn btn-orange" onclick="showWeather()">🌤️ 天氣資訊</button>
-            <button class="btn btn-green" onclick="planRoute()">🗺️ 路線規劃</button>
+            <select id="hole-select" onchange="handleHoleSelectChange()">
+                <option value="all">-- 顯示全場設施 (Hole All) --</option>
+                <script>for(let i=1;i<=18;i++) document.write(`<option value="${i}">第 ${i} 洞 (Hole ${i})</option>`);</script>
+            </select>
         </div>
-        <div class="row">
-            <button class="btn btn-blue" onclick="toggleView()">👁️ 視角切換</button>
-            <button class="btn btn-orange" onclick="clearAll()">🧹 清除所有</button>
-            <button class="btn btn-green" onclick="shareLocation()">📤 分享位置</button>
+
+        <div class="display-card" id="dist-card" onclick="toggleMeasureMode()">
+            <div><span class="dist-val" id="dist-out">--</span><span style="color:#888; margin-left:5px; font-weight:bold;">YDS</span></div>
+            <div style="text-align:right">
+                <div style="color:var(--accent); font-weight:bold; font-size: 14px;" id="status-title">測距功能關閉</div>
+                <div style="font-size:11px; color:#aaa;" id="info-text">支援深層縮放無視覺斷層</div>
+            </div>
         </div>
-        <div class="row">
-        <div><span class="dist-val" id="dist-out">--</span><span style="color:#888; margin-left:5px; font-weight:bold;">YDS</span></div>
-        <div style="text-align:right">
-            <div style="color:var(--accent); font-weight:bold; font-size: 14px;" id="status-title">測距功能關閉</div>
-            <div style="font-size:11px; color:#aaa;" id="info-text">支援深層縮放無視覺斷層</div>
-        </div>
+
+    <div class="scorecard-panel" id="scorecard-panel" style="display:none;">
+        <h3>山溪地高爾夫俱樂部 - 分數卡</h3>
+        <div class="scorecard-summary" id="scorecard-summary"></div>
+        <div id="scorecard-content"></div>
     </div>
 </div>
 
@@ -110,70 +163,174 @@
     let courseMarkers = [];
     let userMarker = null;
     let isMeasureMode = false;
-    let trailPoints = [];
-    let trailLine = null;
-    let routeLine = null;
     let holePositions = {}; // 存儲洞的位置
+    let windMarker = null; // 風向標記
+    let scorecardVisible = false;
 
-    function locateGPS() {
-        const info = document.getElementById('info-text');
-        info.innerText = "🛰️ 衛星定位中...";
-        
-        // 獲取多個位置讀取並平均以提高準確性
-        let positions = [];
-        let attempts = 0;
-        const maxAttempts = 5;
-        
-        function getPosition() {
-            navigator.geolocation.getCurrentPosition(
-                (p) => {
-                    positions.push({ lng: p.coords.longitude, lat: p.coords.latitude });
-                    attempts++;
-                    if (attempts < maxAttempts) {
-                        setTimeout(getPosition, 1000); // 每秒嘗試一次
-                    } else {
-                        // 計算平均位置
-                        const avgLng = positions.reduce((sum, pos) => sum + pos.lng, 0) / positions.length;
-                        const avgLat = positions.reduce((sum, pos) => sum + pos.lat, 0) / positions.length;
-                        
-                        if (userMarker) userMarker.remove();
-                        const el = document.createElement('div');
-                        el.className = 'user-marker';
-                        userMarker = new maplibregl.Marker({ element: el }).setLngLat([avgLng, avgLat]).addTo(map);
-                        
-                        map.flyTo({ 
-                            center: [avgLng, avgLat], 
-                            zoom: 18, 
-                            pitch: 50,
-                            speed: 1.2
-                        });
-                        info.innerText = `位置已更新 (平均 ${positions.length} 次讀取)`;
-                        
-                        // 啟動定時更新位置
-                        startPositionWatch();
-                    }
-                },
-                (err) => {
-                    attempts++;
-                    if (attempts < maxAttempts) {
-                        setTimeout(getPosition, 1000);
-                    } else {
-                        info.innerText = `定位失敗 (${err.message})，請檢查權限或在開闊區域重試`;
-                    }
-                },
-                { 
-                    enableHighAccuracy: true, 
-                    timeout: 10000, 
-                    maximumAge: 30000 // 允許使用30秒內的快取位置
-                }
-            );
-        }
-        
-        getPosition();
+    const scorecardData = {
+      courseName: "山溪地高爾夫俱樂部",
+      englishName: "Suncity Golf & Country Club",
+      address: "台灣 306 新竹縣關西鎮玉山里2鄰13號",
+      phone: "03-547-6288",
+      fax: "03-547-6597",
+      totalLengthYards: 6812,
+      par: 72,
+      front9Totals: { blue: 3388, white: 3209, red: 2886, par: 36 },
+      back9Totals: { blue: 3424, white: 3261, red: 2871, par: 36 },
+      holes: [
+        { number: 1, par: 4, hdcp: 7, distances: { blue: 398, white: 383, red: 351 }, score: null, putts: null },
+        { number: 2, par: 4, hdcp: 1, distances: { blue: 462, white: 437, red: 398 }, score: null, putts: null },
+        { number: 3, par: 4, hdcp: 3, distances: { blue: 433, white: 410, red: 365 }, score: null, putts: null },
+        { number: 4, par: 3, hdcp: 17, distances: { blue: 157, white: 143, red: 131 }, score: null, putts: null },
+        { number: 5, par: 4, hdcp: 11, distances: { blue: 299, white: 286, red: 268 }, score: null, putts: null },
+        { number: 6, par: 5, hdcp: 9, distances: { blue: 552, white: 529, red: 478 }, score: null, putts: null },
+        { number: 7, par: 4, hdcp: 13, distances: { blue: 379, white: 361, red: 313 }, score: null, putts: null },
+        { number: 8, par: 3, hdcp: 15, distances: { blue: 162, white: 147, red: 124 }, score: null, putts: null },
+        { number: 9, par: 5, hdcp: 5, distances: { blue: 546, white: 513, red: 458 }, score: null, putts: null },
+        { number: 10, par: 4, hdcp: 4, distances: { blue: 378, white: 356, red: 306 }, score: null, putts: null },
+        { number: 11, par: 4, hdcp: 2, distances: { blue: 412, white: 375, red: 346 }, score: null, putts: null },
+        { number: 12, par: 3, hdcp: 18, distances: { blue: 193, white: 183, red: 107 }, score: null, putts: null },
+        { number: 13, par: 4, hdcp: 10, distances: { blue: 392, white: 366, red: 316 }, score: null, putts: null },
+        { number: 14, par: 3, hdcp: 16, distances: { blue: 173, white: 165, red: 132 }, score: null, putts: null },
+        { number: 15, par: 4, hdcp: 12, distances: { blue: 403, white: 388, red: 346 }, score: null, putts: null },
+        { number: 16, par: 5, hdcp: 8, distances: { blue: 526, white: 513, red: 486 }, score: null, putts: null },
+        { number: 17, par: 4, hdcp: 14, distances: { blue: 372, white: 359, red: 326 }, score: null, putts: null },
+        { number: 18, par: 5, hdcp: 6, distances: { blue: 575, white: 556, red: 506 }, score: null, putts: null }
+      ]
+    };
+
+    function toggleScorecard() {
+      scorecardVisible = !scorecardVisible;
+      document.getElementById('scorecard-panel').style.display = scorecardVisible ? 'block' : 'none';
+      if (scorecardVisible) {
+        renderScorecard();
+      }
+    }
+
+    function handleHoleSelectChange() {
+      renderFeatures();
+      if (scorecardVisible) renderScorecard();
+    }
+
+    function renderScorecard() {
+      const summary = document.getElementById('scorecard-summary');
+      const content = document.getElementById('scorecard-content');
+      const selectedHole = document.getElementById('hole-select').value;
+      const totals = calculateScoreTotals();
+
+      summary.innerHTML = `
+        <span>球場名稱：${scorecardData.courseName}</span>
+        <span>前九：${totals.frontPlayedCount ? totals.frontStrokes : '--'} (${totals.frontPlayedCount} 洞) / ${totals.frontPlayedCount ? totals.frontDiffLabel : '--'}</span>
+        <span>後九：${totals.backPlayedCount ? totals.backStrokes : '--'} (${totals.backPlayedCount} 洞) / ${totals.backPlayedCount ? totals.backDiffLabel : '--'}</span>
+        <span>總桿數：${totals.playedCount ? totals.totalStrokes : '--'} (${totals.playedCount ? totals.totalDiffLabel : '--'})</span>
+        <span>總推桿數：${totals.puttsCount ? totals.totalPutts : '--'}</span>
+      `;
+
+      const rows = scorecardData.holes.map(h => {
+        const activeClass = selectedHole === String(h.number) ? 'scorecard-row active' : 'scorecard-row';
+        const scoreValue = h.score !== null && h.score !== undefined ? h.score : '';
+        const puttsValue = h.putts !== null && h.putts !== undefined ? h.putts : '';
+        return `
+          <tr class="${activeClass}" onclick="selectHole(${h.number})">
+            <td>${h.number}</td>
+            <td>${h.par}</td>
+            <td>${h.hdcp}</td>
+            <td>${h.distances.blue}</td>
+            <td>${h.distances.white}</td>
+            <td>${h.distances.red}</td>
+            <td><input type="number" min="1" max="15" value="${scoreValue}" onchange="updateHoleValue(${h.number}, 'score', this.value)" style="width:60px; padding:4px; border-radius:6px; border:1px solid rgba(0,0,0,0.2); text-align:center;" /></td>
+            <td><input type="number" min="0" max="10" value="${puttsValue}" onchange="updateHoleValue(${h.number}, 'putts', this.value)" style="width:60px; padding:4px; border-radius:6px; border:1px solid rgba(0,0,0,0.2); text-align:center;" /></td>
+          </tr>`;
+      }).join('');
+
+      content.innerHTML = `
+        <table class="scorecard-table">
+          <thead>
+            <tr>
+              <th>洞號</th>
+              <th>標準桿</th>
+              <th>桿差</th>
+              <th>藍標</th>
+              <th>白標</th>
+              <th>紅標</th>
+              <th>球數</th>
+              <th>推桿</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+          <tfoot>
+            <tr>
+              <td colspan="3">前九</td>
+              <td>${scorecardData.front9Totals.blue}</td>
+              <td>${scorecardData.front9Totals.white}</td>
+              <td>${scorecardData.front9Totals.red}</td>
+            </tr>
+            <tr>
+              <td colspan="3">後九</td>
+              <td>${scorecardData.back9Totals.blue}</td>
+              <td>${scorecardData.back9Totals.white}</td>
+              <td>${scorecardData.back9Totals.red}</td>
+            </tr>
+          </tfoot>
+        </table>
+      `;
+    }
+
+    function selectHole(number) {
+      document.getElementById('hole-select').value = number;
+      renderFeatures();
+      renderScorecard();
+      const info = document.getElementById('info-text');
+      info.innerText = `已選擇第 ${number} 洞`;
+    }
+
+    function updateHoleValue(number, field, value) {
+      const hole = scorecardData.holes.find(h => h.number === number);
+      hole[field] = value ? Number(value) : null;
+      renderScorecard();
+      const info = document.getElementById('info-text');
+      const label = field === 'score' ? '球數' : '推桿';
+      info.innerText = `已更新第 ${number} 洞 ${label}：${value || '未輸入'}`;
+    }
+
+    function calculateScoreTotals() {
+      const frontHoles = scorecardData.holes.slice(0, 9);
+      const backHoles = scorecardData.holes.slice(9, 18);
+      const frontPlayedHoles = frontHoles.filter(h => h.score !== null && h.score !== undefined && h.score !== '');
+      const backPlayedHoles = backHoles.filter(h => h.score !== null && h.score !== undefined && h.score !== '');
+      const totalPlayedHoles = scorecardData.holes.filter(h => h.score !== null && h.score !== undefined && h.score !== '');
+      const frontStrokes = frontPlayedHoles.reduce((sum, h) => sum + h.score, 0);
+      const backStrokes = backPlayedHoles.reduce((sum, h) => sum + h.score, 0);
+      const frontPutts = frontHoles.filter(h => h.putts !== null && h.putts !== undefined && h.putts !== '').reduce((sum, h) => sum + h.putts, 0);
+      const backPutts = backHoles.filter(h => h.putts !== null && h.putts !== undefined && h.putts !== '').reduce((sum, h) => sum + h.putts, 0);
+      const totalStrokes = frontStrokes + backStrokes;
+      const totalPutts = frontPutts + backPutts;
+      const puttsCount = scorecardData.holes.filter(h => h.putts !== null && h.putts !== undefined && h.putts !== '').length;
+      const frontPar = frontPlayedHoles.reduce((sum, h) => sum + h.par, 0);
+      const backPar = backPlayedHoles.reduce((sum, h) => sum + h.par, 0);
+      const totalPar = totalPlayedHoles.reduce((sum, h) => sum + h.par, 0);
+      const frontDiff = frontStrokes - frontPar;
+      const backDiff = backStrokes - backPar;
+      const totalDiff = totalStrokes - totalPar;
+      const formatDiff = diff => diff === 0 ? 'E' : diff > 0 ? `+${diff}` : `${diff}`;
+      return {
+        totalStrokes,
+        totalPutts,
+        puttsCount,
+        playedCount: totalPlayedHoles.length,
+        frontStrokes,
+        backStrokes,
+        frontPutts,
+        backPutts,
+        frontPlayedCount: frontPlayedHoles.length,
+        backPlayedCount: backPlayedHoles.length,
+        frontDiffLabel: frontPlayedHoles.length ? formatDiff(frontDiff) : '--',
+        backDiffLabel: backPlayedHoles.length ? formatDiff(backDiff) : '--',
+        totalDiffLabel: totalPlayedHoles.length ? formatDiff(totalDiff) : '--'
+      };
     }
 
     let positionWatchId = null;
-    let isTrailRecording = false;
     let currentView = '3d'; // '3d' or '2d'
 
     function startPositionWatch() {
@@ -182,10 +339,6 @@
             (p) => {
                 if (userMarker) {
                     userMarker.setLngLat([p.coords.longitude, p.coords.latitude]);
-                }
-                if (isTrailRecording) {
-                    trailPoints.push([p.coords.longitude, p.coords.latitude]);
-                    updateTrail();
                 }
             },
             (err) => {
@@ -299,131 +452,84 @@
         }
     }
 
-    function toggleTrail() {
-        isTrailRecording = !isTrailRecording;
-        const info = document.getElementById('info-text');
-        if (isTrailRecording) {
-            trailPoints = [];
-            info.innerText = "🚶 軌跡記錄中...";
-        } else {
-            info.innerText = "軌跡記錄已停止";
-        }
+    function clearMeasure() {
+        measureMarkers.forEach(m => m.remove());
+        measureMarkers = []; 
+        measurePoints = [];
+        document.getElementById('dist-out').innerText = "--";
     }
 
-    function updateTrail() {
-        if (trailLine) {
-            map.removeLayer('trail-layer');
-            map.removeSource('trail-src');
-        }
-        if (trailPoints.length > 1) {
-            map.addSource('trail-src', {
-                type: 'geojson',
-                data: {
-                    type: 'Feature',
-                    geometry: {
-                        type: 'LineString',
-                        coordinates: trailPoints
-                    }
-                }
-            });
-            map.addLayer({
-                id: 'trail-layer',
-                type: 'line',
-                source: 'trail-src',
-                paint: {
-                    'line-color': '#ff0000',
-                    'line-width': 3,
-                    'line-opacity': 0.8
-                }
-            });
-        }
-    }
-
-    async function showWeather() {
+    async function getWeatherAtLocation(coord) {
         const info = document.getElementById('info-text');
-        if (!userMarker) {
-            info.innerText = "請先定位您的位置";
-            return;
-        }
-        const pos = userMarker.getLngLat();
         info.innerText = "🌤️ 獲取天氣資訊...";
         try {
-            // 使用免費天氣API (請替換為您的API密鑰)
-            const apiKey = 'YOUR_OPENWEATHERMAP_API_KEY'; // 需要用戶提供
-            const res = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${pos.lat}&lon=${pos.lng}&appid=${apiKey}&units=metric&lang=zh_tw`);
+            // 使用Open-Meteo免費天氣API (無需API密鑰)
+            const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${coord[1]}&longitude=${coord[0]}&current_weather=true&timezone=Asia/Taipei`);
             const data = await res.json();
-            const temp = data.main.temp;
-            const desc = data.weather[0].description;
-            const wind = data.wind.speed;
-            info.innerText = `🌤️ ${temp}°C, ${desc}, 風速 ${wind} m/s`;
+            const temp = data.current_weather.temperature;
+            const windSpeed = data.current_weather.windspeed;
+            const windDir = data.current_weather.winddirection;
+            
+            // 將風向角度轉換為方向
+            const directions = ['北', '北北東', '東北', '東北東', '東', '東南東', '東南', '南南東', '南', '南南西', '西南', '西南西', '西', '西北西', '西北', '北北西'];
+            const dirIndex = Math.round(windDir / 22.5) % 16;
+            const windDirection = directions[dirIndex];
+            
+            info.innerText = `🌤️ ${temp}°C, 風速 ${windSpeed} km/h (${windDirection})`;
+            
+            // 在地圖上顯示風向
+            drawWindDirection({ lng: coord[0], lat: coord[1] }, windDir, windSpeed, windDirection);
         } catch (e) {
-            info.innerText = "天氣資訊獲取失敗，請檢查網路或API密鑰";
+            info.innerText = "天氣資訊獲取失敗，請檢查網路連線";
         }
     }
 
-    function planRoute() {
-        const info = document.getElementById('info-text');
-        if (!userMarker) {
-            info.innerText = "請先定位您的位置";
-            return;
-        }
-        const holeNum = document.getElementById('hole-select').value;
-        if (holeNum === 'all' || !holePositions[holeNum]) {
-            info.innerText = "請選擇特定洞號進行路線規劃";
-            return;
-        }
-        const userPos = userMarker.getLngLat();
-        const holePos = holePositions[holeNum];
+    function drawWindDirection(pos, windDir, windSpeed, windDirection) {
+        // 移除舊的風向標記
+        if (windMarker) windMarker.remove();
         
-        // 簡單直線路線 (實際應用中應使用路由API)
-        const routeCoords = [ [userPos.lng, userPos.lat], holePos ];
+        // 創建風向箭頭SVG
+        const arrowSize = Math.min(50, Math.max(30, windSpeed * 2)); // 根據風速調整箭頭大小
+        const svg = `
+            <svg width="80" height="80" viewBox="0 0 80 80" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));">
+                <!-- 圓形背景 -->
+                <circle cx="40" cy="40" r="35" fill="rgba(255, 152, 0, 0.8)" stroke="#fff" stroke-width="2"/>
+                
+                <!-- 風向箭頭 -->
+                <g transform="translate(40, 40) rotate(${windDir})">
+                    <!-- 箭頭桿 -->
+                    <line x1="0" y1="-25" x2="0" y2="15" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+                    <!-- 箭頭頭 -->
+                    <polygon points="0,-25 -6,-10 6,-10" fill="#fff"/>
+                </g>
+                
+                <!-- 中心點 -->
+                <circle cx="40" cy="40" r="4" fill="#fff"/>
+                
+                <!-- 風速標籤 -->
+                <text x="40" y="65" font-size="12" font-weight="bold" fill="#fff" text-anchor="middle">${windSpeed} km/h</text>
+            </svg>
+        `;
         
-        if (routeLine) {
-            map.removeLayer('route-layer');
-            map.removeSource('route-src');
-        }
-        map.addSource('route-src', {
-            type: 'geojson',
-            data: {
-                type: 'Feature',
-                geometry: {
-                    type: 'LineString',
-                    coordinates: routeCoords
-                }
-            }
-        });
-        map.addLayer({
-            id: 'route-layer',
-            type: 'line',
-            source: 'route-src',
-            paint: {
-                'line-color': '#0000ff',
-                'line-width': 4,
-                'line-dasharray': [2, 2]
-            }
-        });
-        info.innerText = `路線已規劃到第 ${holeNum} 洞`;
+        const el = document.createElement('div');
+        el.innerHTML = svg;
+        el.style.cursor = 'pointer';
+        el.title = `風向: ${windDirection}`;
+        
+        windMarker = new maplibregl.Marker({ element: el }).setLngLat(pos).addTo(map);
     }
+
+
 
     function clearAll() {
-        // 清除軌跡
-        if (trailLine) {
-            map.removeLayer('trail-layer');
-            map.removeSource('trail-src');
-            trailLine = null;
-        }
-        trailPoints = [];
-        isTrailRecording = false;
-        
-        // 清除路線
-        if (routeLine) {
-            map.removeLayer('route-layer');
-            map.removeSource('route-src');
-            routeLine = null;
-        }
-        
         // 清除測距
         clearMeasure();
+        
+        // 清除風向標記
+        if (windMarker) {
+            windMarker.remove();
+            windMarker = null;
+        }
         
         const info = document.getElementById('info-text');
         info.innerText = "所有疊加已清除";
