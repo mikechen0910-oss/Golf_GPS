@@ -208,6 +208,13 @@
     function locateGPS() {
         const info = document.getElementById('info-text');
         info.innerText = "🛰️ 衛星定位中...";
+        
+        // 檢查瀏覽器支援
+        if (!navigator.geolocation) {
+            info.innerText = "您的瀏覽器不支援地理定位";
+            return;
+        }
+        
         let positions = [];
         let attempts = 0;
         const maxAttempts = 5;
@@ -234,13 +241,19 @@
                 },
                 (err) => {
                     attempts++;
+                    let errMsg = '';
+                    if (err.code === 1) errMsg = '定位被拒絕，請在設定中允許位置存取';
+                    else if (err.code === 2) errMsg = '無法取得位置資訊';
+                    else if (err.code === 3) errMsg = '定位逾時，請在開闊區域重試';
+                    else errMsg = err.message;
+                    
                     if (attempts < maxAttempts) {
-                        setTimeout(getPosition, 1000);
+                        setTimeout(getPosition, 1500);
                     } else {
-                        info.innerText = `定位失敗 (${err.message})，請檢查權限或在開闊區域重試`;
+                        info.innerText = `定位失敗 (${errMsg})`;
                     }
                 },
-                { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
+                { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
             );
         }
         getPosition();
@@ -319,11 +332,11 @@
                         <td>${h.distances.red}</td>
                         <td>
                             <div style="display:flex; align-items:center; justify-content:center;">
-                                <input type="number" min="1" max="15" value="${scoreValue}" onchange="updateHoleValue(${h.number}, 'score', this.value)" style="width:60px; padding:4px; border-radius:6px; border:1px solid rgba(0,0,0,0.2); text-align:center;" />
+                                <input type="number" min="1" max="15" value="${scoreValue}" data-hole="${h.number}" data-field="score" class="hole-input" style="width:60px; padding:4px; border-radius:6px; border:1px solid rgba(0,0,0,0.2); text-align:center;" />
                                 ${getScoreIcon(h)}
                             </div>
                         </td>
-                        <td><input type="number" min="0" max="10" value="${puttsValue}" onchange="updateHoleValue(${h.number}, 'putts', this.value)" style="width:60px; padding:4px; border-radius:6px; border:1px solid rgba(0,0,0,0.2); text-align:center;" /></td>
+                        <td><input type="number" min="0" max="10" value="${puttsValue}" data-hole="${h.number}" data-field="putts" class="hole-input" style="width:60px; padding:4px; border-radius:6px; border:1px solid rgba(0,0,0,0.2); text-align:center;" /></td>
                     </tr>`;
       }).join('');
 
@@ -358,6 +371,22 @@
           </tfoot>
         </table>
       `;
+      
+      // 為所有輸入框綁定事件監聽器（支援 iOS Safari）
+      setTimeout(() => {
+        const inputs = content.querySelectorAll('.hole-input');
+        inputs.forEach(input => {
+          const handleChange = () => {
+            const hole = parseInt(input.dataset.hole);
+            const field = input.dataset.field;
+            const value = input.value;
+            updateHoleValue(hole, field, value);
+          };
+          input.addEventListener('input', handleChange);
+          input.addEventListener('change', handleChange);
+          input.addEventListener('blur', handleChange);
+        });
+      }, 0);
     }
 
     function selectHole(number) {
