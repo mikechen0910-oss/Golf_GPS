@@ -383,11 +383,10 @@
       // 為所有輸入框綁定事件監聽器（支援 iOS Safari）
       setTimeout(() => {
         const inputs = content.querySelectorAll('.hole-input');
-        const buttons = content.querySelectorAll('[data-action]');
         
         inputs.forEach(input => {
           const handleChange = () => {
-            const hole = parseInt(input.dataset.hole);
+            const hole = parseInt(input.dataset.hole, 10);
             const field = input.dataset.field;
             const value = input.value;
             updateHoleValue(hole, field, value);
@@ -397,29 +396,38 @@
           input.addEventListener('blur', handleChange);
         });
         
-        // 為 +/- 按鈕綁定點擊事件
-        buttons.forEach(btn => {
-          btn.addEventListener('click', (e) => {
+        // 為 +/- 按鈕綁定點擊事件（必須單獨綁定每個按鈕）
+        content.querySelectorAll('button[data-action]').forEach((btn) => {
+          btn.addEventListener('click', function(e) {
             e.preventDefault();
-            const hole = parseInt(btn.dataset.hole);
-            const field = btn.dataset.field;
-            const action = btn.dataset.action;
-            const hole_obj = scorecardData.holes.find(h => h.number === hole);
-            if (!hole_obj) return;
+            e.stopPropagation();
             
-            let currentValue = hole_obj[field] !== null && hole_obj[field] !== undefined ? Number(hole_obj[field]) : 0;
+            const hole = parseInt(this.dataset.hole, 10);
+            const field = String(this.dataset.field).trim();
+            const action = String(this.dataset.action).trim();
+            
+            const hole_obj = scorecardData.holes.find(h => h.number === hole);
+            if (!hole_obj) {
+              console.warn('Hole not found:', hole);
+              return;
+            }
+            
+            const currentValue = (hole_obj[field] !== null && hole_obj[field] !== undefined) ? Number(hole_obj[field]) : 0;
             let newValue = currentValue;
             
             if (action === 'plus') {
               newValue = currentValue + 1;
+              if (field === 'score' && newValue > 15) newValue = 15;
+              if (field === 'putts' && newValue > 10) newValue = 10;
             } else if (action === 'minus') {
-              newValue = Math.max(0, currentValue - 1);
+              newValue = Math.max(field === 'score' ? 1 : 0, currentValue - 1);
             }
             
+            console.log(`Updating hole ${hole}, field ${field} to ${newValue}`);
             updateHoleValue(hole, field, newValue);
-          });
+          }, false);
         });
-      }, 0);
+      }, 10);
     }
 
     function selectHole(number) {
