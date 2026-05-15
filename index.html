@@ -331,12 +331,20 @@
                         <td>${h.distances.white}</td>
                         <td>${h.distances.red}</td>
                         <td>
-                            <div style="display:flex; align-items:center; justify-content:center;">
-                                <input type="number" min="1" max="15" value="${scoreValue}" data-hole="${h.number}" data-field="score" class="hole-input" style="width:60px; padding:4px; border-radius:6px; border:1px solid rgba(0,0,0,0.2); text-align:center;" />
+                            <div style="display:flex; align-items:center; justify-content:center; gap:4px;">
+                                <button data-hole="${h.number}" data-field="score" data-action="minus" style="width:28px; height:28px; padding:0; border-radius:4px; border:1px solid #ccc; background:#f0f0f0; font-weight:bold; font-size:16px; cursor:pointer;">−</button>
+                                <input type="number" min="1" max="15" value="${scoreValue}" data-hole="${h.number}" data-field="score" class="hole-input" style="width:50px; padding:6px; border-radius:6px; border:1px solid rgba(0,0,0,0.2); text-align:center; font-size:14px; font-weight:600;" />
+                                <button data-hole="${h.number}" data-field="score" data-action="plus" style="width:28px; height:28px; padding:0; border-radius:4px; border:1px solid #ccc; background:#f0f0f0; font-weight:bold; font-size:16px; cursor:pointer;">+</button>
                                 ${getScoreIcon(h)}
                             </div>
                         </td>
-                        <td><input type="number" min="0" max="10" value="${puttsValue}" data-hole="${h.number}" data-field="putts" class="hole-input" style="width:60px; padding:4px; border-radius:6px; border:1px solid rgba(0,0,0,0.2); text-align:center;" /></td>
+                        <td>
+                            <div style="display:flex; align-items:center; justify-content:center; gap:4px;">
+                                <button data-hole="${h.number}" data-field="putts" data-action="minus" style="width:28px; height:28px; padding:0; border-radius:4px; border:1px solid #ccc; background:#f0f0f0; font-weight:bold; font-size:16px; cursor:pointer;">−</button>
+                                <input type="number" min="0" max="10" value="${puttsValue}" data-hole="${h.number}" data-field="putts" class="hole-input" style="width:50px; padding:6px; border-radius:6px; border:1px solid rgba(0,0,0,0.2); text-align:center; font-size:14px; font-weight:600;" />
+                                <button data-hole="${h.number}" data-field="putts" data-action="plus" style="width:28px; height:28px; padding:0; border-radius:4px; border:1px solid #ccc; background:#f0f0f0; font-weight:bold; font-size:16px; cursor:pointer;">+</button>
+                            </div>
+                        </td>
                     </tr>`;
       }).join('');
 
@@ -375,6 +383,8 @@
       // 為所有輸入框綁定事件監聽器（支援 iOS Safari）
       setTimeout(() => {
         const inputs = content.querySelectorAll('.hole-input');
+        const buttons = content.querySelectorAll('[data-action]');
+        
         inputs.forEach(input => {
           const handleChange = () => {
             const hole = parseInt(input.dataset.hole);
@@ -385,6 +395,29 @@
           input.addEventListener('input', handleChange);
           input.addEventListener('change', handleChange);
           input.addEventListener('blur', handleChange);
+        });
+        
+        // 為 +/- 按鈕綁定點擊事件
+        buttons.forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const hole = parseInt(btn.dataset.hole);
+            const field = btn.dataset.field;
+            const action = btn.dataset.action;
+            const hole_obj = scorecardData.holes.find(h => h.number === hole);
+            if (!hole_obj) return;
+            
+            let currentValue = hole_obj[field] !== null && hole_obj[field] !== undefined ? Number(hole_obj[field]) : 0;
+            let newValue = currentValue;
+            
+            if (action === 'plus') {
+              newValue = currentValue + 1;
+            } else if (action === 'minus') {
+              newValue = Math.max(0, currentValue - 1);
+            }
+            
+            updateHoleValue(hole, field, newValue);
+          });
         });
       }, 0);
     }
