@@ -57,13 +57,16 @@
         <button class="btn btn-green" onclick="scanFacilities()">🌿 掃描設施</button>
     </div>
     <div class="row">
-        <select id="hole-select" onchange="renderFeatures()">
-            <option value="all">-- 顯示全場設施 (Hole All) --</option>
-            <script>for(let i=1;i<=18;i++) document.write(`<option value="${i}">第 ${i} 洞 (Hole ${i})</option>`);</script>
-        </select>
-    </div>
-
-    <div class="display-card" id="dist-card" onclick="toggleMeasureMode()">
+            <button class="btn btn-blue" onclick="toggleTrail()">🚶 軌跡記錄</button>
+            <button class="btn btn-orange" onclick="showWeather()">🌤️ 天氣資訊</button>
+            <button class="btn btn-green" onclick="planRoute()">🗺️ 路線規劃</button>
+        </div>
+        <div class="row">
+            <button class="btn btn-blue" onclick="toggleView()">👁️ 視角切換</button>
+            <button class="btn btn-orange" onclick="clearAll()">🧹 清除所有</button>
+            <button class="btn btn-green" onclick="shareLocation()">📤 分享位置</button>
+        </div>
+        <div class="row">
         <div><span class="dist-val" id="dist-out">--</span><span style="color:#888; margin-left:5px; font-weight:bold;">YDS</span></div>
         <div style="text-align:right">
             <div style="color:var(--accent); font-weight:bold; font-size: 14px;" id="status-title">測距功能關閉</div>
@@ -107,28 +110,93 @@
     let courseMarkers = [];
     let userMarker = null;
     let isMeasureMode = false;
+    let trailPoints = [];
+    let trailLine = null;
+    let routeLine = null;
+    let holePositions = {}; // 存儲洞的位置
 
     function locateGPS() {
         const info = document.getElementById('info-text');
         info.innerText = "🛰️ 衛星定位中...";
-        navigator.geolocation.getCurrentPosition(p => {
-            const lng = p.coords.longitude;
-            const lat = p.coords.latitude;
-            if (userMarker) userMarker.remove();
-            const el = document.createElement('div');
-            el.className = 'user-marker';
-            userMarker = new maplibregl.Marker({ element: el }).setLngLat([lng, lat]).addTo(map);
-            
-            map.flyTo({ 
-                center: [lng, lat], 
-                zoom: 18, 
-                pitch: 50,
-                speed: 1.2
-            });
-            info.innerText = "位置已更新";
-        }, (err) => {
-            info.innerText = "定位失敗，請檢查權限";
-        }, { enableHighAccuracy: true });
+        
+        // 獲取多個位置讀取並平均以提高準確性
+        let positions = [];
+        let attempts = 0;
+        const maxAttempts = 5;
+        
+        function getPosition() {
+            navigator.geolocation.getCurrentPosition(
+                (p) => {
+                    positions.push({ lng: p.coords.longitude, lat: p.coords.latitude });
+                    attempts++;
+                    if (attempts < maxAttempts) {
+                        setTimeout(getPosition, 1000); // 每秒嘗試一次
+                    } else {
+                        // 計算平均位置
+                        const avgLng = positions.reduce((sum, pos) => sum + pos.lng, 0) / positions.length;
+                        const avgLat = positions.reduce((sum, pos) => sum + pos.lat, 0) / positions.length;
+                        
+                        if (userMarker) userMarker.remove();
+                        const el = document.createElement('div');
+                        el.className = 'user-marker';
+                        userMarker = new maplibregl.Marker({ element: el }).setLngLat([avgLng, avgLat]).addTo(map);
+                        
+                        map.flyTo({ 
+                            center: [avgLng, avgLat], 
+                            zoom: 18, 
+                            pitch: 50,
+                            speed: 1.2
+                        });
+                        info.innerText = `位置已更新 (平均 ${positions.length} 次讀取)`;
+                        
+                        // 啟動定時更新位置
+                        startPositionWatch();
+                    }
+                },
+                (err) => {
+                    attempts++;
+                    if (attempts < maxAttempts) {
+                        setTimeout(getPosition, 1000);
+                    } else {
+                        info.innerText = `定位失敗 (${err.message})，請檢查權限或在開闊區域重試`;
+                    }
+                },
+                { 
+                    enableHighAccuracy: true, 
+                    timeout: 10000, 
+                    maximumAge: 30000 // 允許使用30秒內的快取位置
+                }
+            );
+        }
+        
+        getPosition();
+    }
+
+    let positionWatchId = null;
+    let isTrailRecording = false;
+    let currentView = '3d'; // '3d' or '2d'
+
+    function startPositionWatch() {
+        if (positionWatchId) navigator.geolocation.clearWatch(positionWatchId);
+        positionWatchId = navigator.geolocation.watchPosition(
+            (p) => {
+                if (userMarker) {
+                    userMarker.setLngLat([p.coords.longitude, p.coords.latitude]);
+                }
+                if (isTrailRecording) {
+                    trailPoints.push([p.coords.longitude, p.coords.latitude]);
+                    updateTrail();
+                }
+            },
+            (err) => {
+                console.log('位置監視錯誤:', err);
+            },
+            { 
+                enableHighAccuracy: true, 
+                timeout: 10000, 
+                maximumAge: 30000 
+            }
+        );
     }
 
     async function findCourses() {
@@ -171,8 +239,18 @@
             const res = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`);
             const data = await res.json();
             allElements = data.elements;
+            holePositions = {};
+            allElements.forEach(el => {
+                if (el.tags && el.tags['golf:hole_number']) {
+                    const holeNum = el.tags['golf:hole_number'];
+                    if (el.geometry && el.geometry.length > 0) {
+                        const center = el.geometry[Math.floor(el.geometry.length / 2)];
+                        holePositions[holeNum] = [center.lon, center.lat];
+                    }
+                }
+            });
             renderFeatures();
-            info.innerText = `設施已同步 (3D)`;
+            info.innerText = `設施已同步 (3D) - 發現 ${Object.keys(holePositions).length} 個洞`;
         } catch (e) { info.innerText = "掃描失敗"; }
     }
 
@@ -221,10 +299,149 @@
         }
     }
 
-    function clearMeasure() {
-        measureMarkers.forEach(m => m.remove());
-        measureMarkers = []; measurePoints = [];
-        document.getElementById('dist-out').innerText = "--";
+    function toggleTrail() {
+        isTrailRecording = !isTrailRecording;
+        const info = document.getElementById('info-text');
+        if (isTrailRecording) {
+            trailPoints = [];
+            info.innerText = "🚶 軌跡記錄中...";
+        } else {
+            info.innerText = "軌跡記錄已停止";
+        }
+    }
+
+    function updateTrail() {
+        if (trailLine) {
+            map.removeLayer('trail-layer');
+            map.removeSource('trail-src');
+        }
+        if (trailPoints.length > 1) {
+            map.addSource('trail-src', {
+                type: 'geojson',
+                data: {
+                    type: 'Feature',
+                    geometry: {
+                        type: 'LineString',
+                        coordinates: trailPoints
+                    }
+                }
+            });
+            map.addLayer({
+                id: 'trail-layer',
+                type: 'line',
+                source: 'trail-src',
+                paint: {
+                    'line-color': '#ff0000',
+                    'line-width': 3,
+                    'line-opacity': 0.8
+                }
+            });
+        }
+    }
+
+    async function showWeather() {
+        const info = document.getElementById('info-text');
+        if (!userMarker) {
+            info.innerText = "請先定位您的位置";
+            return;
+        }
+        const pos = userMarker.getLngLat();
+        info.innerText = "🌤️ 獲取天氣資訊...";
+        try {
+            // 使用免費天氣API (請替換為您的API密鑰)
+            const apiKey = 'YOUR_OPENWEATHERMAP_API_KEY'; // 需要用戶提供
+            const res = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${pos.lat}&lon=${pos.lng}&appid=${apiKey}&units=metric&lang=zh_tw`);
+            const data = await res.json();
+            const temp = data.main.temp;
+            const desc = data.weather[0].description;
+            const wind = data.wind.speed;
+            info.innerText = `🌤️ ${temp}°C, ${desc}, 風速 ${wind} m/s`;
+        } catch (e) {
+            info.innerText = "天氣資訊獲取失敗，請檢查網路或API密鑰";
+        }
+    }
+
+    function planRoute() {
+        const info = document.getElementById('info-text');
+        if (!userMarker) {
+            info.innerText = "請先定位您的位置";
+            return;
+        }
+        const holeNum = document.getElementById('hole-select').value;
+        if (holeNum === 'all' || !holePositions[holeNum]) {
+            info.innerText = "請選擇特定洞號進行路線規劃";
+            return;
+        }
+        const userPos = userMarker.getLngLat();
+        const holePos = holePositions[holeNum];
+        
+        // 簡單直線路線 (實際應用中應使用路由API)
+        const routeCoords = [ [userPos.lng, userPos.lat], holePos ];
+        
+        if (routeLine) {
+            map.removeLayer('route-layer');
+            map.removeSource('route-src');
+        }
+        map.addSource('route-src', {
+            type: 'geojson',
+            data: {
+                type: 'Feature',
+                geometry: {
+                    type: 'LineString',
+                    coordinates: routeCoords
+                }
+            }
+        });
+        map.addLayer({
+            id: 'route-layer',
+            type: 'line',
+            source: 'route-src',
+            paint: {
+                'line-color': '#0000ff',
+                'line-width': 4,
+                'line-dasharray': [2, 2]
+            }
+        });
+        info.innerText = `路線已規劃到第 ${holeNum} 洞`;
+    }
+
+    function clearAll() {
+        // 清除軌跡
+        if (trailLine) {
+            map.removeLayer('trail-layer');
+            map.removeSource('trail-src');
+            trailLine = null;
+        }
+        trailPoints = [];
+        isTrailRecording = false;
+        
+        // 清除路線
+        if (routeLine) {
+            map.removeLayer('route-layer');
+            map.removeSource('route-src');
+            routeLine = null;
+        }
+        
+        // 清除測距
+        clearMeasure();
+        
+        const info = document.getElementById('info-text');
+        info.innerText = "所有疊加已清除";
+    }
+
+    function shareLocation() {
+        const info = document.getElementById('info-text');
+        if (!userMarker) {
+            info.innerText = "請先定位您的位置";
+            return;
+        }
+        const pos = userMarker.getLngLat();
+        const url = `https://www.google.com/maps/@${pos.lat},${pos.lng},18z`;
+        navigator.clipboard.writeText(url).then(() => {
+            info.innerText = "位置連結已複製到剪貼簿";
+        }).catch(() => {
+            info.innerText = `分享連結: ${url}`;
+        });
     }
 
     map.on('click', (e) => {
