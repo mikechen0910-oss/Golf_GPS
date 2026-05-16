@@ -125,22 +125,28 @@
         <button class="btn btn-blue" onclick="toggleScorecard()">📋 分數卡</button>
     </div>
     <div class="row">
-            <select id="hole-select" onchange="handleHoleSelectChange()">
-                <option value="all">-- 顯示全場設施 (Hole All) --</option>
-                <script>for(let i=1;i<=18;i++) document.write(`<option value="${i}">第 ${i} 洞 (Hole ${i})</option>`);</script>
-            </select>
-        </div>
+        <select id="course-select" onchange="handleCourseChange()">
+            <option value="suncity">山溪地高爾夫俱樂部</option>
+            <option value="datun">大屯高爾夫球場</option>
+        </select>
+    </div>
+    <div class="row">
+        <select id="hole-select" onchange="handleHoleSelectChange()">
+            <option value="all">-- 顯示全場設施 (Hole All) --</option>
+            <script>for(let i=1;i<=18;i++) document.write(`<option value="${i}">第 ${i} 洞 (Hole ${i})</option>`);</script>
+        </select>
+    </div>
 
-        <div class="display-card" id="dist-card" onclick="toggleMeasureMode()">
-            <div><span class="dist-val" id="dist-out">--</span><span style="color:#888; margin-left:5px; font-weight:bold;">YDS</span></div>
-            <div style="text-align:right">
-                <div style="color:var(--accent); font-weight:bold; font-size: 14px;" id="status-title">測距功能關閉</div>
-                <div style="font-size:11px; color:#aaa;" id="info-text">支援深層縮放無視覺斷層</div>
-            </div>
+    <div class="display-card" id="dist-card" onclick="toggleMeasureMode()">
+        <div><span class="dist-val" id="dist-out">--</span><span style="color:#888; margin-left:5px; font-weight:bold;">YDS</span></div>
+        <div style="text-align:right">
+            <div style="color:var(--accent); font-weight:bold; font-size: 14px;" id="status-title">測距功能關閉</div>
+            <div style="font-size:11px; color:#aaa;" id="info-text">支援深層縮放無視覺斷層</div>
         </div>
+    </div>
 
     <div class="scorecard-panel" id="scorecard-panel" style="display:none;">
-        <h3>山溪地高爾夫俱樂部 - 分數卡</h3>
+        <h3 id="coursecard-title">山溪地高爾夫俱樂部 - 分數卡</h3>
         <div class="scorecard-actions">
             <button class="btn-save" onclick="saveScorecard()">💾 儲存</button>
             <button class="btn-clear" onclick="clearScorecard()">🗑️ 清除</button>
@@ -225,8 +231,91 @@
     let windMarker = null;
     let scorecardVisible = false;
     let positionWatchId = null;
+    let currentCourse = 'suncity';
 
-    const STORAGE_KEY = 'golfGpsScorecard';
+    const STORAGE_KEY_PREFIX = 'golfGpsScorecard_';
+
+    const scorecardDataMap = {
+      suncity: {
+        courseName: "山溪地高爾夫俱樂部",
+        englishName: "Suncity Golf & Country Club",
+        address: "台灣 306 新竹縣關西鎮玉山里2鄰13號",
+        phone: "03-547-6288",
+        fax: "03-547-6597",
+        totalLengthYards: 6812,
+        par: 72,
+        front9Totals: { blue: 3388, white: 3209, red: 2886, par: 36 },
+        back9Totals: { blue: 3424, white: 3261, red: 2871, par: 36 },
+        holes: [
+          { number: 1, par: 4, hdcp: 7, distances: { blue: 398, white: 383, red: 351 }, score: null, putts: null },
+          { number: 2, par: 4, hdcp: 1, distances: { blue: 462, white: 437, red: 398 }, score: null, putts: null },
+          { number: 3, par: 4, hdcp: 3, distances: { blue: 433, white: 410, red: 365 }, score: null, putts: null },
+          { number: 4, par: 3, hdcp: 17, distances: { blue: 157, white: 143, red: 131 }, score: null, putts: null },
+          { number: 5, par: 4, hdcp: 11, distances: { blue: 299, white: 286, red: 268 }, score: null, putts: null },
+          { number: 6, par: 5, hdcp: 9, distances: { blue: 552, white: 529, red: 478 }, score: null, putts: null },
+          { number: 7, par: 4, hdcp: 13, distances: { blue: 379, white: 361, red: 313 }, score: null, putts: null },
+          { number: 8, par: 3, hdcp: 15, distances: { blue: 162, white: 147, red: 124 }, score: null, putts: null },
+          { number: 9, par: 5, hdcp: 5, distances: { blue: 546, white: 513, red: 458 }, score: null, putts: null },
+          { number: 10, par: 4, hdcp: 4, distances: { blue: 378, white: 356, red: 306 }, score: null, putts: null },
+          { number: 11, par: 4, hdcp: 2, distances: { blue: 412, white: 375, red: 346 }, score: null, putts: null },
+          { number: 12, par: 3, hdcp: 18, distances: { blue: 193, white: 183, red: 107 }, score: null, putts: null },
+          { number: 13, par: 4, hdcp: 10, distances: { blue: 392, white: 366, red: 316 }, score: null, putts: null },
+          { number: 14, par: 3, hdcp: 16, distances: { blue: 173, white: 165, red: 132 }, score: null, putts: null },
+          { number: 15, par: 4, hdcp: 12, distances: { blue: 403, white: 388, red: 346 }, score: null, putts: null },
+          { number: 16, par: 5, hdcp: 8, distances: { blue: 526, white: 513, red: 486 }, score: null, putts: null },
+          { number: 17, par: 4, hdcp: 14, distances: { blue: 372, white: 359, red: 326 }, score: null, putts: null },
+          { number: 18, par: 5, hdcp: 6, distances: { blue: 575, white: 556, red: 506 }, score: null, putts: null }
+        ]
+      },
+      datun: {
+        courseName: "大屯高爾夫球場",
+        englishName: "Ta Tun Golf Club",
+        address: "台灣 台北市",
+        phone: "",
+        fax: "",
+        totalLengthYards: 6468,
+        par: 72,
+        front9Totals: { blue: 3424, white: 3266, red: 2995, par: 36 },
+        back9Totals: { blue: 3317, white: 3202, red: 2939, par: 36 },
+        holes: [
+          { number: 1, par: 4, hdcp: 5, distances: { blue: 368, white: 356, red: 341 }, score: null, putts: null },
+          { number: 2, par: 3, hdcp: 7, distances: { blue: 220, white: 180, red: 168 }, score: null, putts: null },
+          { number: 3, par: 4, hdcp: 1, distances: { blue: 430, white: 422, red: 380 }, score: null, putts: null },
+          { number: 4, par: 3, hdcp: 17, distances: { blue: 217, white: 212, red: 198 }, score: null, putts: null },
+          { number: 5, par: 3, hdcp: 13, distances: { blue: 180, white: 160, red: 130 }, score: null, putts: null },
+          { number: 6, par: 5, hdcp: 11, distances: { blue: 503, white: 483, red: 442 }, score: null, putts: null },
+          { number: 7, par: 5, hdcp: 9, distances: { blue: 486, white: 456, red: 416 }, score: null, putts: null },
+          { number: 8, par: 4, hdcp: 3, distances: { blue: 470, white: 462, red: 400 }, score: null, putts: null },
+          { number: 9, par: 5, hdcp: 15, distances: { blue: 550, white: 535, red: 520 }, score: null, putts: null },
+          { number: 10, par: 4, hdcp: 18, distances: { blue: 270, white: 264, red: 254 }, score: null, putts: null },
+          { number: 11, par: 3, hdcp: 12, distances: { blue: 180, white: 171, red: 165 }, score: null, putts: null },
+          { number: 12, par: 4, hdcp: 6, distances: { blue: 435, white: 420, red: 363 }, score: null, putts: null },
+          { number: 13, par: 4, hdcp: 4, distances: { blue: 456, white: 426, red: 395 }, score: null, putts: null },
+          { number: 14, par: 5, hdcp: 16, distances: { blue: 476, white: 471, red: 450 }, score: null, putts: null },
+          { number: 15, par: 4, hdcp: 2, distances: { blue: 430, white: 415, red: 395 }, score: null, putts: null },
+          { number: 16, par: 4, hdcp: 8, distances: { blue: 380, white: 370, red: 312 }, score: null, putts: null },
+          { number: 17, par: 3, hdcp: 10, distances: { blue: 178, white: 168, red: 163 }, score: null, putts: null },
+          { number: 18, par: 5, hdcp: 14, distances: { blue: 512, white: 497, red: 442 }, score: null, putts: null }
+        ]
+      }
+    };
+
+    let scorecardData = scorecardDataMap[currentCourse];
+
+    function handleCourseChange() {
+        const selected = document.getElementById('course-select').value;
+        if (selected !== currentCourse) {
+            currentCourse = selected;
+            scorecardData = scorecardDataMap[currentCourse];
+            loadScorecardData();
+            if (scorecardVisible) {
+                document.getElementById('coursecard-title').innerText = scorecardData.courseName + ' - 分數卡';
+                renderScorecard();
+            }
+            const info = document.getElementById('info-text');
+            info.innerText = `已切換至 ${scorecardData.courseName}`;
+        }
+    }
 
     function locateGPS() {
         const info = document.getElementById('info-text');
@@ -281,42 +370,9 @@
         getPosition();
     }
 
-    const scorecardData = {
-      courseName: "山溪地高爾夫俱樂部",
-      englishName: "Suncity Golf & Country Club",
-      address: "台灣 306 新竹縣關西鎮玉山里2鄰13號",
-      phone: "03-547-6288",
-      fax: "03-547-6597",
-      totalLengthYards: 6812,
-      par: 72,
-      front9Totals: { blue: 3388, white: 3209, red: 2886, par: 36 },
-      back9Totals: { blue: 3424, white: 3261, red: 2871, par: 36 },
-      holes: [
-        { number: 1, par: 4, hdcp: 7, distances: { blue: 398, white: 383, red: 351 }, score: null, putts: null },
-        { number: 2, par: 4, hdcp: 1, distances: { blue: 462, white: 437, red: 398 }, score: null, putts: null },
-        { number: 3, par: 4, hdcp: 3, distances: { blue: 433, white: 410, red: 365 }, score: null, putts: null },
-        { number: 4, par: 3, hdcp: 17, distances: { blue: 157, white: 143, red: 131 }, score: null, putts: null },
-        { number: 5, par: 4, hdcp: 11, distances: { blue: 299, white: 286, red: 268 }, score: null, putts: null },
-        { number: 6, par: 5, hdcp: 9, distances: { blue: 552, white: 529, red: 478 }, score: null, putts: null },
-        { number: 7, par: 4, hdcp: 13, distances: { blue: 379, white: 361, red: 313 }, score: null, putts: null },
-        { number: 8, par: 3, hdcp: 15, distances: { blue: 162, white: 147, red: 124 }, score: null, putts: null },
-        { number: 9, par: 5, hdcp: 5, distances: { blue: 546, white: 513, red: 458 }, score: null, putts: null },
-        { number: 10, par: 4, hdcp: 4, distances: { blue: 378, white: 356, red: 306 }, score: null, putts: null },
-        { number: 11, par: 4, hdcp: 2, distances: { blue: 412, white: 375, red: 346 }, score: null, putts: null },
-        { number: 12, par: 3, hdcp: 18, distances: { blue: 193, white: 183, red: 107 }, score: null, putts: null },
-        { number: 13, par: 4, hdcp: 10, distances: { blue: 392, white: 366, red: 316 }, score: null, putts: null },
-        { number: 14, par: 3, hdcp: 16, distances: { blue: 173, white: 165, red: 132 }, score: null, putts: null },
-        { number: 15, par: 4, hdcp: 12, distances: { blue: 403, white: 388, red: 346 }, score: null, putts: null },
-        { number: 16, par: 5, hdcp: 8, distances: { blue: 526, white: 513, red: 486 }, score: null, putts: null },
-        { number: 17, par: 4, hdcp: 14, distances: { blue: 372, white: 359, red: 326 }, score: null, putts: null },
-        { number: 18, par: 5, hdcp: 6, distances: { blue: 575, white: 556, red: 506 }, score: null, putts: null }
-      ]
-    };
-
-    // 加載已保存的分數數據
     function loadScorecardData() {
         try {
-            const saved = localStorage.getItem(STORAGE_KEY);
+            const saved = localStorage.getItem(STORAGE_KEY_PREFIX + currentCourse);
             if (saved) {
                 const data = JSON.parse(saved);
                 scorecardData.holes.forEach((hole) => {
@@ -326,21 +382,20 @@
                         hole.putts = savedHole.putts;
                     }
                 });
-                console.log('分數卡已加載');
+                console.log('分數卡已加載：' + currentCourse);
             }
         } catch (e) {
             console.error('加載分數卡失敗:', e);
         }
     }
 
-    // 保存分數數據到 localStorage
     function saveScorecard() {
         try {
             const toSave = JSON.parse(JSON.stringify(scorecardData));
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+            localStorage.setItem(STORAGE_KEY_PREFIX + currentCourse, JSON.stringify(toSave));
             const info = document.getElementById('info-text');
             info.innerText = '✅ 分數卡已儲存到本地';
-            console.log('分數卡已保存');
+            console.log('分數卡已保存：' + currentCourse);
         } catch (e) {
             console.error('保存分數卡失敗:', e);
             const info = document.getElementById('info-text');
@@ -348,7 +403,6 @@
         }
     }
 
-    // 清除所有分數數據
     function clearScorecard() {
         const confirmed = confirm('確定要清除所有分數記錄嗎？');
         if (!confirmed) return;
@@ -357,7 +411,7 @@
             hole.score = null;
             hole.putts = null;
         });
-        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(STORAGE_KEY_PREFIX + currentCourse);
         renderScorecard();
         const info = document.getElementById('info-text');
         info.innerText = '✅ 所有分數已清除';
@@ -367,6 +421,7 @@
       scorecardVisible = !scorecardVisible;
       document.getElementById('scorecard-panel').style.display = scorecardVisible ? 'block' : 'none';
       if (scorecardVisible) {
+        document.getElementById('coursecard-title').innerText = scorecardData.courseName + ' - 分數卡';
         renderScorecard();
       }
     }
@@ -554,45 +609,45 @@
       };
     }
 
-        function getScoreIcon(h) {
-            if (h.score === null || h.score === undefined || h.score === '') return '';
-            const diff = h.score - h.par;
-            const size = 18;
-            const baseStyle = 'vertical-align:middle; margin-left:8px; display:inline-block;';
-            if (diff <= -2) {
-                return `<span style="${baseStyle}" title="低於標準桿 (Eagle+)">` +
-                             `<svg width="${size}" height="${size}" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">` +
-                             `<circle cx="12" cy="12" r="9" fill="none" stroke="#0b5" stroke-width="1.6"/>` +
-                             `<circle cx="12" cy="12" r="5" fill="none" stroke="#0b5" stroke-width="1.4"/>` +
-                             `</svg></span>`;
-            }
-            if (diff === -1) {
-                return `<span style="${baseStyle}" title="低於標準桿 (Birdie)">` +
-                             `<svg width="${size}" height="${size}" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">` +
-                             `<circle cx="12" cy="12" r="7" fill="none" stroke="#09f" stroke-width="1.8"/>` +
-                             `</svg></span>`;
-            }
-            if (diff === 0) {
-                return `<span style="${baseStyle}" title="平標準桿">` +
-                             `<svg width="${size}" height="${size}" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">` +
-                             `<polygon points="12,5 19,18 5,18" fill="none" stroke="#333" stroke-width="1.6"/>` +
-                             `</svg></span>`;
-            }
-            if (diff === 1) {
-                return `<span style="${baseStyle}" title="高於標準桿 (Bogey)">` +
-                             `<svg width="${size}" height="${size}" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">` +
-                             `<rect x="6" y="6" width="12" height="12" fill="none" stroke="#f55" stroke-width="1.6"/>` +
-                             `</svg></span>`;
-            }
-            if (diff >= 2) {
-                return `<span style="${baseStyle}" title="高於標準桿 (+${diff})">` +
-                             `<svg width="${size}" height="${size}" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">` +
-                             `<rect x="3" y="3" width="18" height="18" fill="none" stroke="#f00" stroke-width="1.4"/>` +
-                             `<rect x="8" y="8" width="8" height="8" fill="none" stroke="#f00" stroke-width="1.2"/>` +
-                             `</svg></span>`;
-            }
-            return '';
+    function getScoreIcon(h) {
+        if (h.score === null || h.score === undefined || h.score === '') return '';
+        const diff = h.score - h.par;
+        const size = 18;
+        const baseStyle = 'vertical-align:middle; margin-left:8px; display:inline-block;';
+        if (diff <= -2) {
+            return `<span style="${baseStyle}" title="低於標準桿 (Eagle+)">` +
+                         `<svg width="${size}" height="${size}" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">` +
+                         `<circle cx="12" cy="12" r="9" fill="none" stroke="#0b5" stroke-width="1.6"/>` +
+                         `<circle cx="12" cy="12" r="5" fill="none" stroke="#0b5" stroke-width="1.4"/>` +
+                         `</svg></span>`;
         }
+        if (diff === -1) {
+            return `<span style="${baseStyle}" title="低於標準桿 (Birdie)">` +
+                         `<svg width="${size}" height="${size}" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">` +
+                         `<circle cx="12" cy="12" r="7" fill="none" stroke="#09f" stroke-width="1.8"/>` +
+                         `</svg></span>`;
+        }
+        if (diff === 0) {
+            return `<span style="${baseStyle}" title="平標準桿">` +
+                         `<svg width="${size}" height="${size}" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">` +
+                         `<polygon points="12,5 19,18 5,18" fill="none" stroke="#333" stroke-width="1.6"/>` +
+                         `</svg></span>`;
+        }
+        if (diff === 1) {
+            return `<span style="${baseStyle}" title="高於標準桿 (Bogey)">` +
+                         `<svg width="${size}" height="${size}" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">` +
+                         `<rect x="6" y="6" width="12" height="12" fill="none" stroke="#f55" stroke-width="1.6"/>` +
+                         `</svg></span>`;
+        }
+        if (diff >= 2) {
+            return `<span style="${baseStyle}" title="高於標準桿 (+${diff})">` +
+                         `<svg width="${size}" height="${size}" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">` +
+                         `<rect x="3" y="3" width="18" height="18" fill="none" stroke="#f00" stroke-width="1.4"/>` +
+                         `<rect x="8" y="8" width="8" height="8" fill="none" stroke="#f00" stroke-width="1.2"/>` +
+                         `</svg></span>`;
+        }
+        return '';
+    }
 
     let currentView = '3d';
 
@@ -827,7 +882,6 @@
         loadScorecardData();
     });
     
-    // 備用：如果 DOMContentLoaded 已經觸發
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', loadScorecardData);
     } else {
