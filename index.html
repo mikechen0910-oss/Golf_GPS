@@ -15,10 +15,11 @@
         .row { display: flex; gap: 8px; margin-bottom: 8px; }
         select { flex: 1; padding: 10px; border-radius: 8px; border: 2px solid var(--primary); font-size: 15px; font-weight: bold; background: #fff; outline: none; }
         
-        .btn { border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 5px; flex: 1; color: white; }
+        .btn { border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 5px; flex: 1; }
         .btn-blue { background: #0277bd; }
         .btn-orange { background: #ef6c00; }
         .btn-green { background: var(--primary); }
+        .btn-red { background: #d32f2f; }
         
         .display-card { 
             background: #1a1a1a; color: #fff; padding: 12px; border-radius: 10px; 
@@ -93,6 +94,23 @@
             font-size: 13px;
             font-weight: 600;
         }
+        
+        .scorecard-actions {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .scorecard-actions button {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .btn-save { background: #4caf50; color: white; }
+        .btn-clear { background: #f44336; color: white; }
     </style>
 </head>
 <body>
@@ -123,6 +141,10 @@
 
     <div class="scorecard-panel" id="scorecard-panel" style="display:none;">
         <h3>山溪地高爾夫俱樂部 - 分數卡</h3>
+        <div class="scorecard-actions">
+            <button class="btn-save" onclick="saveScorecard()">💾 儲存</button>
+            <button class="btn-clear" onclick="clearScorecard()">🗑️ 清除</button>
+        </div>
         <div class="scorecard-summary" id="scorecard-summary"></div>
         <div id="scorecard-content"></div>
     </div>
@@ -160,7 +182,7 @@
                     "tiles": ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
                     "tileSize": 256,
                     "attribution": "Tiles &copy; Esri",
-                    "maxzoom": 18 // 強制快取 18 級圖資，防止放大後出現錯誤
+                    "maxzoom": 18
                 }
             },
             "layers": [{ 
@@ -172,7 +194,7 @@
         },
         center: [121.5, 25.03],
         zoom: 10,
-        maxZoom: 20, // 允許地圖物件進一步放大
+        maxZoom: 20,
         pitch: 45,
         bearing: 0,
             antialias: true
@@ -189,7 +211,6 @@
         console.error('Map init error', e);
         const info = document.getElementById('info-text');
         if (info) info.innerText = '地圖初始化失敗：' + (e && e.message ? e.message : e);
-        // 顯示使用者可見的錯誤提示
         const m = document.getElementById('map');
         if (m) m.innerHTML = '<div style="color:#fff; padding:20px; text-align:center;">地圖載入失敗，請查看瀏覽器控制台 (Console) 以取得錯誤細節。</div>';
     }
@@ -200,16 +221,17 @@
     let courseMarkers = [];
     let userMarker = null;
     let isMeasureMode = false;
-    let holePositions = {}; // 存儲洞的位置
-    let windMarker = null; // 風向標記
+    let holePositions = {};
+    let windMarker = null;
     let scorecardVisible = false;
     let positionWatchId = null;
+
+    const STORAGE_KEY = 'golfGpsScorecard';
 
     function locateGPS() {
         const info = document.getElementById('info-text');
         info.innerText = "🛰️ 衛星定位中...";
         
-        // 檢查瀏覽器支援
         if (!navigator.geolocation) {
             info.innerText = "您的瀏覽器不支援地理定位";
             return;
@@ -291,6 +313,56 @@
       ]
     };
 
+    // 加載已保存的分數數據
+    function loadScorecardData() {
+        try {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                const data = JSON.parse(saved);
+                scorecardData.holes.forEach((hole) => {
+                    const savedHole = data.holes.find(h => h.number === hole.number);
+                    if (savedHole) {
+                        hole.score = savedHole.score;
+                        hole.putts = savedHole.putts;
+                    }
+                });
+                console.log('分數卡已加載');
+            }
+        } catch (e) {
+            console.error('加載分數卡失敗:', e);
+        }
+    }
+
+    // 保存分數數據到 localStorage
+    function saveScorecard() {
+        try {
+            const toSave = JSON.parse(JSON.stringify(scorecardData));
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+            const info = document.getElementById('info-text');
+            info.innerText = '✅ 分數卡已儲存到本地';
+            console.log('分數卡已保存');
+        } catch (e) {
+            console.error('保存分數卡失敗:', e);
+            const info = document.getElementById('info-text');
+            info.innerText = '❌ 儲存失敗';
+        }
+    }
+
+    // 清除所有分數數據
+    function clearScorecard() {
+        const confirmed = confirm('確定要清除所有分數記錄嗎？');
+        if (!confirmed) return;
+        
+        scorecardData.holes.forEach(hole => {
+            hole.score = null;
+            hole.putts = null;
+        });
+        localStorage.removeItem(STORAGE_KEY);
+        renderScorecard();
+        const info = document.getElementById('info-text');
+        info.innerText = '✅ 所有分數已清除';
+    }
+
     function toggleScorecard() {
       scorecardVisible = !scorecardVisible;
       document.getElementById('scorecard-panel').style.display = scorecardVisible ? 'block' : 'none';
@@ -332,17 +404,17 @@
                         <td>${h.distances.red}</td>
                         <td>
                             <div style="display:flex; align-items:center; justify-content:center; gap:4px;">
-                                <button data-hole="${h.number}" data-field="score" data-action="minus" style="width:28px; height:28px; padding:0; border-radius:4px; border:1px solid #ccc; background:#f0f0f0; font-weight:bold; font-size:16px; cursor:pointer;">−</button>
-                                <input type="number" min="1" max="15" value="${scoreValue}" data-hole="${h.number}" data-field="score" class="hole-input" style="width:50px; padding:6px; border-radius:6px; border:1px solid rgba(0,0,0,0.2); text-align:center; font-size:14px; font-weight:600;" />
-                                <button data-hole="${h.number}" data-field="score" data-action="plus" style="width:28px; height:28px; padding:0; border-radius:4px; border:1px solid #ccc; background:#f0f0f0; font-weight:bold; font-size:16px; cursor:pointer;">+</button>
+                                <button data-hole="${h.number}" data-field="score" data-action="minus" style="width:28px; height:28px; padding:0; border-radius:4px; border:1px solid #ccc; background:#f0f0f0; cursor:pointer;">−</button>
+                                <input type="number" min="1" max="15" value="${scoreValue}" data-hole="${h.number}" data-field="score" class="hole-input" style="width:50px; padding:6px; border-radius:4px; border:1px solid #ccc;">
+                                <button data-hole="${h.number}" data-field="score" data-action="plus" style="width:28px; height:28px; padding:0; border-radius:4px; border:1px solid #ccc; background:#f0f0f0; cursor:pointer;">+</button>
                                 ${getScoreIcon(h)}
                             </div>
                         </td>
                         <td>
                             <div style="display:flex; align-items:center; justify-content:center; gap:4px;">
-                                <button data-hole="${h.number}" data-field="putts" data-action="minus" style="width:28px; height:28px; padding:0; border-radius:4px; border:1px solid #ccc; background:#f0f0f0; font-weight:bold; font-size:16px; cursor:pointer;">−</button>
-                                <input type="number" min="0" max="10" value="${puttsValue}" data-hole="${h.number}" data-field="putts" class="hole-input" style="width:50px; padding:6px; border-radius:6px; border:1px solid rgba(0,0,0,0.2); text-align:center; font-size:14px; font-weight:600;" />
-                                <button data-hole="${h.number}" data-field="putts" data-action="plus" style="width:28px; height:28px; padding:0; border-radius:4px; border:1px solid #ccc; background:#f0f0f0; font-weight:bold; font-size:16px; cursor:pointer;">+</button>
+                                <button data-hole="${h.number}" data-field="putts" data-action="minus" style="width:28px; height:28px; padding:0; border-radius:4px; border:1px solid #ccc; background:#f0f0f0; cursor:pointer;">−</button>
+                                <input type="number" min="0" max="10" value="${puttsValue}" data-hole="${h.number}" data-field="putts" class="hole-input" style="width:50px; padding:6px; border-radius:4px; border:1px solid #ccc;">
+                                <button data-hole="${h.number}" data-field="putts" data-action="plus" style="width:28px; height:28px; padding:0; border-radius:4px; border:1px solid #ccc; background:#f0f0f0; cursor:pointer;">+</button>
                             </div>
                         </td>
                     </tr>`;
@@ -380,7 +452,6 @@
         </table>
       `;
       
-      // 為所有輸入框綁定事件監聽器（支援 iOS Safari）
       setTimeout(() => {
         const inputs = content.querySelectorAll('.hole-input');
         
@@ -396,7 +467,6 @@
           input.addEventListener('blur', handleChange);
         });
         
-        // 為 +/- 按鈕綁定點擊事件（必須單獨綁定每個按鈕）
         content.querySelectorAll('button[data-action]').forEach((btn) => {
           btn.addEventListener('click', function(e) {
             e.preventDefault();
@@ -524,7 +594,7 @@
             return '';
         }
 
-    let currentView = '3d'; // '3d' or '2d'
+    let currentView = '3d';
 
     function startPositionWatch() {
         if (positionWatchId) navigator.geolocation.clearWatch(positionWatchId);
@@ -546,7 +616,6 @@
     }
 
     async function getWeatherAtLocation(coord) {
-        // coord: [lng, lat]
         const info = document.getElementById('info-text');
         try {
             const lat = coord[1];
@@ -564,7 +633,6 @@
                     const dirs = ['N','NE','E','SE','S','SW','W','NW'];
                     return dirs[Math.round(((deg %= 360) < 0 ? deg + 360 : deg) / 45) % 8];
                 })(windDir);
-                // 呼叫現有的 drawWindDirection
                 drawWindDirection({ lng: lon, lat: lat }, windDir, windSpeed, windDirection);
                 if (info) info.innerText = `風向 ${windDirection} (${Math.round(windDir)}°)，風速 ${windSpeed} km/h`;
             } else {
@@ -666,7 +734,6 @@
         if (isMeasureMode) {
             if (status) status.innerText = '測距功能開啟';
             if (info) info.innerText = '請於地圖上點選兩個點以測量距離';
-            // 清空先前測距標記
             clearMeasure();
         } else {
             if (status) status.innerText = '測距功能關閉';
@@ -676,28 +743,17 @@
     }
 
     function drawWindDirection(pos, windDir, windSpeed, windDirection) {
-        // 移除舊的風向標記
         if (windMarker) windMarker.remove();
         
-        // 創建風向箭頭SVG
-        const arrowSize = Math.min(50, Math.max(30, windSpeed * 2)); // 根據風速調整箭頭大小
+        const arrowSize = Math.min(50, Math.max(30, windSpeed * 2));
         const svg = `
             <svg width="80" height="80" viewBox="0 0 80 80" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));">
-                <!-- 圓形背景 -->
                 <circle cx="40" cy="40" r="35" fill="rgba(255, 152, 0, 0.8)" stroke="#fff" stroke-width="2"/>
-                
-                <!-- 風向箭頭 -->
                 <g transform="translate(40, 40) rotate(${windDir})">
-                    <!-- 箭頭桿 -->
                     <line x1="0" y1="-25" x2="0" y2="15" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
-                    <!-- 箭頭頭 -->
                     <polygon points="0,-25 -6,-10 6,-10" fill="#fff"/>
                 </g>
-                
-                <!-- 中心點 -->
                 <circle cx="40" cy="40" r="4" fill="#fff"/>
-                
-                <!-- 風速標籤 -->
                 <text x="40" y="65" font-size="12" font-weight="bold" fill="#fff" text-anchor="middle">${windSpeed} km/h</text>
             </svg>
         `;
@@ -711,12 +767,10 @@
     }
 
     function clearMeasure() {
-        // 移除標記與折線、重置測距狀態
         try {
             measureMarkers.forEach(m => { try { m.remove(); } catch(e){} });
             measureMarkers = [];
             measurePoints = [];
-            // 移除可能的測距圖層
             if (map && map.getLayer && map.getLayer('measure-line')) {
                 try { map.removeLayer('measure-line'); } catch(e){}
             }
@@ -730,18 +784,12 @@
         } catch(e) { console.error('clearMeasure error', e); }
     }
 
-
-
     function clearAll() {
-        // 清除測距
         clearMeasure();
-        
-        // 清除風向標記
         if (windMarker) {
             windMarker.remove();
             windMarker = null;
         }
-        
         const info = document.getElementById('info-text');
         info.innerText = "所有疊加已清除";
     }
@@ -773,6 +821,18 @@
             document.getElementById('dist-out').innerText = (dist * 1.09361).toFixed(0);
         }
     });
+
+    // 頁面加載時恢復分數卡數據
+    window.addEventListener('DOMContentLoaded', function() {
+        loadScorecardData();
+    });
+    
+    // 備用：如果 DOMContentLoaded 已經觸發
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', loadScorecardData);
+    } else {
+        loadScorecardData();
+    }
 </script>
 </body>
 </html>
