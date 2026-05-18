@@ -1,6 +1,37 @@
 {
   "courses": {
     "suncity": {
+      "courseName": "Suncity Golf & Country Club",
+      "englishName": "Suncity Golf & Country Club",
+      "address": "No.13, Yushanli, Guanxi Township, Hsinchu County, Taiwan",
+      "phone": "03-547-6288",
+      "fax": "03-547-6597",
+      "totalLengthYards": 6812,
+      "par": 72,
+      "front9Totals": { "blue": 3388, "white": 3209, "red": 2886, "par": 36 },
+      "back9Totals": { "blue": 3424, "white": 3261, "red": 2871, "par": 36 },
+      "holes": [
+        { "number": 1, "par": 4, "hdcp": 7, "distances": { "blue": 398, "white": 383, "red": 351 }, "score": null, "putts": null },
+        { "number": 2, "par": 4, "hdcp": 1, "distances": { "blue": 462, "white": 437, "red": 398 }, "score": null, "putts": null },
+        { "number": 3, "par": 4, "hdcp": 3, "distances": { "blue": 433, "white": 410, "red": 365 }, "score": null, "putts": null },
+        { "number": 4, "par": 3, "hdcp": 17, "distances": { "blue": 157, "white": 143, "red": 131 }, "score": null, "putts": null },
+        { "number": 5, "par": 4, "hdcp": 11, "distances": { "blue": 299, "white": 286, "red": 268 }, "score": null, "putts": null },
+        { "number": 6, "par": 5, "hdcp": 9, "distances": { "blue": 552, "white": 529, "red": 478 }, "score": null, "putts": null },
+        { "number": 7, "par": 4, "hdcp": 13, "distances": { "blue": 379, "white": 361, "red": 313 }, "score": null, "putts": null },
+        { "number": 8, "par": 3, "hdcp": 15, "distances": { "blue": 162, "white": 147, "red": 124 }, "score": null, "putts": null },
+        { "number": 9, "par": 5, "hdcp": 5, "distances": { "blue": 546, "white": 513, "red": 458 }, "score": null, "putts": null },
+        { "number": 10, "par": 4, "hdcp": 4, "distances": { "blue": 378, "white": 356, "red": 306 }, "score": null, "putts": null },
+        { "number": 11, "par": 4, "hdcp": 2, "distances": { "blue": 412, "white": 375, "red": 346 }, "score": null, "putts": null },
+        { "number": 12, "par": 3, "hdcp": 18, "distances": { "blue": 193, "white": 183, "red": 107 }, "score": null, "putts": null },
+        { "number": 13, "par": 4, "hdcp": 10, "distances": { "blue": 392, "white": 366, "red": 316 }, "score": null, "putts": null },
+        { "number": 14, "par": 3, "hdcp": 16, "distances": { "blue": 173, "white": 165, "red": 132 }, "score": null, "putts": null },
+        { "number": 15, "par": 4, "hdcp": 12, "distances": { "blue": 403, "white": 388, "red": 346 }, "score": null, "putts": null },
+        { "number": 16, "par": 5, "hdcp": 8, "distances": { "blue": 526, "white": 513, "red": 486 }, "score": null, "putts": null },
+        { "number": 17, "par": 4, "hdcp": 14, "distances": { "blue": 372, "white": 359, "red": 326 }, "score": null, "putts": null },
+        { "number": 18, "par": 5, "hdcp": 6, "distances": { "blue": 575, "white": 556, "red": 506 }, "score": null, "putts": null }
+      ]
+    },
+    "sinfong": {
       "courseName": "Sinfong Golf Club",
       "englishName": "Sinfong Golf Club",
       "address": "No.104, Kengzikou, Xinfeng Township, Hsinchu County, Taiwan",
