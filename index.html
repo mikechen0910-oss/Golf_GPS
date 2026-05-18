@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
@@ -215,14 +215,15 @@
     </div>
     <div class="row">
         <select id="course-select" onchange="handleCourseChange()">
-            <option value="suncity">山溪地高爾夫俱樂部</option>
-            <option value="datun">大屯高爾夫球場</option>
+            <option value="">載入球場資料中...</option>
         </select>
+    </div>
+    <div class="row" id="routing-row" style="display:none;">
+        <select id="routing-select" onchange="handleRoutingChange()"></select>
     </div>
     <div class="row">
         <select id="hole-select" onchange="handleHoleSelectChange()">
             <option value="all">-- 顯示全場設施 (Hole All) --</option>
-            <script>for(let i=1;i<=18;i++) document.write(`<option value="${i}">第 ${i} 洞 (Hole ${i})</option>`);</script>
         </select>
     </div>
 
@@ -353,86 +354,162 @@
     const STORAGE_KEY_PREFIX = 'golfGpsScorecard_';
     const STORAGE_HISTORY_PREFIX = 'golfGpsHistory_';
 
-    const scorecardDataMap = {
-      suncity: {
-        courseName: "山溪地高爾夫俱樂部",
-        englishName: "Suncity Golf & Country Club",
-        address: "台灣 306 新竹縣關西鎮玉山里2鄰13號",
-        phone: "03-547-6288",
-        fax: "03-547-6597",
-        totalLengthYards: 6812,
-        par: 72,
-        front9Totals: { blue: 3388, white: 3209, red: 2886, par: 36 },
-        back9Totals: { blue: 3424, white: 3261, red: 2871, par: 36 },
-        holes: [
-          { number: 1, par: 4, hdcp: 7, distances: { blue: 398, white: 383, red: 351 }, score: null, putts: null },
-          { number: 2, par: 4, hdcp: 1, distances: { blue: 462, white: 437, red: 398 }, score: null, putts: null },
-          { number: 3, par: 4, hdcp: 3, distances: { blue: 433, white: 410, red: 365 }, score: null, putts: null },
-          { number: 4, par: 3, hdcp: 17, distances: { blue: 157, white: 143, red: 131 }, score: null, putts: null },
-          { number: 5, par: 4, hdcp: 11, distances: { blue: 299, white: 286, red: 268 }, score: null, putts: null },
-          { number: 6, par: 5, hdcp: 9, distances: { blue: 552, white: 529, red: 478 }, score: null, putts: null },
-          { number: 7, par: 4, hdcp: 13, distances: { blue: 379, white: 361, red: 313 }, score: null, putts: null },
-          { number: 8, par: 3, hdcp: 15, distances: { blue: 162, white: 147, red: 124 }, score: null, putts: null },
-          { number: 9, par: 5, hdcp: 5, distances: { blue: 546, white: 513, red: 458 }, score: null, putts: null },
-          { number: 10, par: 4, hdcp: 4, distances: { blue: 378, white: 356, red: 306 }, score: null, putts: null },
-          { number: 11, par: 4, hdcp: 2, distances: { blue: 412, white: 375, red: 346 }, score: null, putts: null },
-          { number: 12, par: 3, hdcp: 18, distances: { blue: 193, white: 183, red: 107 }, score: null, putts: null },
-          { number: 13, par: 4, hdcp: 10, distances: { blue: 392, white: 366, red: 316 }, score: null, putts: null },
-          { number: 14, par: 3, hdcp: 16, distances: { blue: 173, white: 165, red: 132 }, score: null, putts: null },
-          { number: 15, par: 4, hdcp: 12, distances: { blue: 403, white: 388, red: 346 }, score: null, putts: null },
-          { number: 16, par: 5, hdcp: 8, distances: { blue: 526, white: 513, red: 486 }, score: null, putts: null },
-          { number: 17, par: 4, hdcp: 14, distances: { blue: 372, white: 359, red: 326 }, score: null, putts: null },
-          { number: 18, par: 5, hdcp: 6, distances: { blue: 575, white: 556, red: 506 }, score: null, putts: null }
-        ]
-      },
-      datun: {
-        courseName: "大屯高爾夫球場",
-        englishName: "Ta Tun Golf Club",
-        address: "台灣 台北市",
-        phone: "",
-        fax: "",
-        totalLengthYards: 6468,
-        par: 72,
-        front9Totals: { blue: 3424, white: 3266, red: 2995, par: 36 },
-        back9Totals: { blue: 3317, white: 3202, red: 2939, par: 36 },
-        holes: [
-          { number: 1, par: 4, hdcp: 5, distances: { blue: 368, white: 356, red: 341 }, score: null, putts: null },
-          { number: 2, par: 3, hdcp: 7, distances: { blue: 220, white: 180, red: 168 }, score: null, putts: null },
-          { number: 3, par: 4, hdcp: 1, distances: { blue: 430, white: 422, red: 380 }, score: null, putts: null },
-          { number: 4, par: 3, hdcp: 17, distances: { blue: 217, white: 212, red: 198 }, score: null, putts: null },
-          { number: 5, par: 3, hdcp: 13, distances: { blue: 180, white: 160, red: 130 }, score: null, putts: null },
-          { number: 6, par: 5, hdcp: 11, distances: { blue: 503, white: 483, red: 442 }, score: null, putts: null },
-          { number: 7, par: 5, hdcp: 9, distances: { blue: 486, white: 456, red: 416 }, score: null, putts: null },
-          { number: 8, par: 4, hdcp: 3, distances: { blue: 470, white: 462, red: 400 }, score: null, putts: null },
-          { number: 9, par: 5, hdcp: 15, distances: { blue: 550, white: 535, red: 520 }, score: null, putts: null },
-          { number: 10, par: 4, hdcp: 18, distances: { blue: 270, white: 264, red: 254 }, score: null, putts: null },
-          { number: 11, par: 3, hdcp: 12, distances: { blue: 180, white: 171, red: 165 }, score: null, putts: null },
-          { number: 12, par: 4, hdcp: 6, distances: { blue: 435, white: 420, red: 363 }, score: null, putts: null },
-          { number: 13, par: 4, hdcp: 4, distances: { blue: 456, white: 426, red: 395 }, score: null, putts: null },
-          { number: 14, par: 5, hdcp: 16, distances: { blue: 476, white: 471, red: 450 }, score: null, putts: null },
-          { number: 15, par: 4, hdcp: 2, distances: { blue: 430, white: 415, red: 395 }, score: null, putts: null },
-          { number: 16, par: 4, hdcp: 8, distances: { blue: 380, white: 370, red: 312 }, score: null, putts: null },
-          { number: 17, par: 3, hdcp: 10, distances: { blue: 178, white: 168, red: 163 }, score: null, putts: null },
-          { number: 18, par: 5, hdcp: 14, distances: { blue: 512, white: 497, red: 442 }, score: null, putts: null }
-        ]
-      }
-    };
+    let scorecardDataMap = {};
+    let scorecardData = null;
+    let currentRoutingId = null;
 
-    let scorecardData = scorecardDataMap[currentCourse];
+    function cloneCourseData(course) {
+        return JSON.parse(JSON.stringify(course));
+    }
+
+    function getCurrentCourseMeta() {
+        return scorecardDataMap[currentCourse] || null;
+    }
+
+    function getCurrentRoutingMeta() {
+        const course = getCurrentCourseMeta();
+        if (!course || !Array.isArray(course.routingOptions)) return null;
+        return course.routingOptions.find(r => r.id === currentRoutingId) || null;
+    }
+
+    function getScorecardStorageKey() {
+        return `${STORAGE_KEY_PREFIX}${currentCourse}__${currentRoutingId || 'default'}`;
+    }
+
+    function getHistoryStorageKey() {
+        return `${STORAGE_HISTORY_PREFIX}${currentCourse}__${currentRoutingId || 'default'}`;
+    }
+
+    function buildScorecardData(course, routingId) {
+        if (Array.isArray(course.holes)) {
+            return cloneCourseData(course);
+        }
+        const routing = (course.routingOptions || []).find(r => r.id === routingId) || course.routingOptions?.[0];
+        if (!routing) throw new Error('找不到球道路線設定');
+        const front = course.zones[routing.frontZone];
+        const back = course.zones[routing.backZone];
+        if (!front || !back) throw new Error('路線區域資料缺失');
+
+        const mapHole = (h, idx, zoneName) => ({
+            number: idx + 1,
+            par: h.par,
+            hdcp: h.hdcp,
+            distances: { blue: h.blue, white: h.white, red: h.red },
+            score: null,
+            putts: null,
+            zone: zoneName,
+            zoneHole: h.zoneHole
+        });
+        const frontHoles = front.holes.map((h, i) => mapHole(h, i, front.name));
+        const backHoles = back.holes.map((h, i) => mapHole(h, i + 9, back.name));
+        const sum = (arr, key) => arr.reduce((s, x) => s + (x[key] || 0), 0);
+        const holes = [...frontHoles, ...backHoles];
+
+        return {
+            courseName: course.courseName,
+            englishName: course.englishName || '',
+            address: course.address || '',
+            phone: course.phone || '',
+            fax: course.fax || '',
+            par: sum(holes, 'par'),
+            routingId: routing.id,
+            routingName: routing.name,
+            front9Label: front.name,
+            back9Label: back.name,
+            front9Totals: { blue: front.total.blue, white: front.total.white, red: front.total.red, par: front.total.par },
+            back9Totals: { blue: back.total.blue, white: back.total.white, red: back.total.red, par: back.total.par },
+            holes
+        };
+    }
+
+    function initCourseSelectOptions() {
+        const select = document.getElementById('course-select');
+        if (!select) return;
+        const keys = Object.keys(scorecardDataMap);
+        if (!keys.length) {
+            select.innerHTML = '<option value="">無球場資料</option>';
+            return;
+        }
+        select.innerHTML = keys.map((key) => `<option value="${key}">${scorecardDataMap[key].courseName}</option>`).join('');
+        if (!scorecardDataMap[currentCourse]) currentCourse = keys[0];
+        select.value = currentCourse;
+    }
+
+    function initRoutingOptions() {
+        const row = document.getElementById('routing-row');
+        const select = document.getElementById('routing-select');
+        const course = getCurrentCourseMeta();
+        if (!row || !select || !course) return;
+        if (!Array.isArray(course.routingOptions) || course.routingOptions.length === 0) {
+            row.style.display = 'none';
+            select.innerHTML = '';
+            currentRoutingId = null;
+            return;
+        }
+        row.style.display = 'flex';
+        select.innerHTML = course.routingOptions.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
+        currentRoutingId = course.routingOptions.some(r => r.id === currentRoutingId)
+            ? currentRoutingId
+            : (course.defaultRouting || course.routingOptions[0].id);
+        select.value = currentRoutingId;
+    }
+
+    async function loadCourseData() {
+        const res = await fetch('./courses.json', { cache: 'no-cache' });
+        if (!res.ok) throw new Error(`courses.json 載入失敗 (${res.status})`);
+        const data = await res.json();
+        if (!data || typeof data !== 'object' || !data.courses || typeof data.courses !== 'object') {
+            throw new Error('courses.json 格式錯誤');
+        }
+        scorecardDataMap = data.courses;
+        initCourseSelectOptions();
+        initRoutingOptions();
+        scorecardData = buildScorecardData(scorecardDataMap[currentCourse], currentRoutingId);
+        loadScorecardData();
+    }
+
+    function initHoleSelectOptions() {
+        const select = document.getElementById('hole-select');
+        if (!select || select.dataset.initialized === 'true') return;
+        const frag = document.createDocumentFragment();
+        for (let i = 1; i <= 18; i++) {
+            const opt = document.createElement('option');
+            opt.value = String(i);
+            opt.textContent = `第 ${i} 洞 (Hole ${i})`;
+            frag.appendChild(opt);
+        }
+        select.appendChild(frag);
+        select.dataset.initialized = 'true';
+    }
 
     function handleCourseChange() {
+        if (!Object.keys(scorecardDataMap).length) return;
         const selected = document.getElementById('course-select').value;
         if (selected !== currentCourse) {
             currentCourse = selected;
-            scorecardData = scorecardDataMap[currentCourse];
+            initRoutingOptions();
+            scorecardData = buildScorecardData(scorecardDataMap[currentCourse], currentRoutingId);
             loadScorecardData();
             if (scorecardVisible) {
-                document.getElementById('coursecard-title').innerText = scorecardData.courseName + ' - 分數卡';
+                document.getElementById('coursecard-title').innerText = scorecardData.courseName + (scorecardData.routingName ? ` (${scorecardData.routingName})` : '') + ' - 分數卡';
                 renderScorecard();
             }
             const info = document.getElementById('info-text');
             info.innerText = `已切換至 ${scorecardData.courseName}`;
         }
+    }
+
+    function handleRoutingChange() {
+        const select = document.getElementById('routing-select');
+        if (!select) return;
+        currentRoutingId = select.value || null;
+        const course = getCurrentCourseMeta();
+        if (!course) return;
+        scorecardData = buildScorecardData(course, currentRoutingId);
+        loadScorecardData();
+        if (scorecardVisible) renderScorecard();
+        const route = getCurrentRoutingMeta();
+        setInfo(route ? `已切換路線：${route.name}` : '已切換路線');
     }
 
     function locateGPS() {
@@ -489,8 +566,9 @@
     }
 
     function loadScorecardData() {
+        if (!scorecardData || !Array.isArray(scorecardData.holes)) return;
         try {
-            const saved = localStorage.getItem(STORAGE_KEY_PREFIX + currentCourse);
+            const saved = localStorage.getItem(getScorecardStorageKey());
             if (saved) {
                 const data = JSON.parse(saved);
                 scorecardData.holes.forEach((hole) => {
@@ -510,10 +588,10 @@
     function saveScorecardDraft() {
         try {
             const toSave = JSON.parse(JSON.stringify(scorecardData));
-            localStorage.setItem(STORAGE_KEY_PREFIX + currentCourse, JSON.stringify(toSave));
+            localStorage.setItem(getScorecardStorageKey(), JSON.stringify(toSave));
             const info = document.getElementById('info-text');
             info.innerText = '💾 分數卡已暫存（未完賽）';
-            console.log('分數卡暫存：' + currentCourse);
+            console.log('分數卡暫存：' + getScorecardStorageKey());
         } catch (e) {
             console.error('暫存分數卡失敗:', e);
             const info = document.getElementById('info-text');
@@ -543,6 +621,8 @@
                 id: timestamp,
                 course: currentCourse,
                 courseName: scorecardData.courseName,
+                routingId: currentRoutingId,
+                routingName: scorecardData.routingName || null,
                 date: dateStr,
                 timestamp: timestamp,
                 holes: JSON.parse(JSON.stringify(scorecardData.holes)),
@@ -551,7 +631,7 @@
 
             // 取得現有歷史記錄
             let history = [];
-            const historyKey = STORAGE_HISTORY_PREFIX + currentCourse;
+            const historyKey = getHistoryStorageKey();
             const savedHistory = localStorage.getItem(historyKey);
             if (savedHistory) {
                 history = JSON.parse(savedHistory);
@@ -562,7 +642,7 @@
             localStorage.setItem(historyKey, JSON.stringify(history));
 
             // 清除暫存
-            localStorage.removeItem(STORAGE_KEY_PREFIX + currentCourse);
+            localStorage.removeItem(getScorecardStorageKey());
             
             // 清空目前分數卡
             scorecardData.holes.forEach(hole => {
@@ -584,7 +664,7 @@
 
     function showHistory() {
         try {
-            const historyKey = STORAGE_HISTORY_PREFIX + currentCourse;
+            const historyKey = getHistoryStorageKey();
             let history = [];
             const savedHistory = localStorage.getItem(historyKey);
             if (savedHistory) {
@@ -600,7 +680,7 @@
             } else {
                 historyList.innerHTML = history.map(record => `
                     <div class="history-item" onclick="showHistoryDetail('${record.id}')">
-                        <div class="history-item-title">${record.courseName}</div>
+                        <div class="history-item-title">${record.courseName}${record.routingName ? ' - ' + record.routingName : ''}</div>
                         <div class="history-item-date">📅 ${record.date}</div>
                         <div class="history-item-stats">
                             <span class="history-item-stat">🏌️ 桿數: ${record.totals.totalStrokes}</span>
@@ -621,7 +701,7 @@
 
     function showHistoryDetail(recordId) {
         try {
-            const historyKey = STORAGE_HISTORY_PREFIX + currentCourse;
+            const historyKey = getHistoryStorageKey();
             const savedHistory = localStorage.getItem(historyKey);
             if (!savedHistory) return;
 
@@ -632,7 +712,7 @@
             currentHistoryId = recordId;
 
             const title = document.getElementById('historyDetailTitle');
-            title.innerText = `${record.courseName} - ${record.date}`;
+            title.innerText = `${record.courseName}${record.routingName ? ' - ' + record.routingName : ''} - ${record.date}`;
 
             const body = document.getElementById('historyDetailBody');
             const totals = record.totals;
@@ -692,7 +772,7 @@
 
     function exportAsJSON() {
         try {
-            const historyKey = STORAGE_HISTORY_PREFIX + currentCourse;
+            const historyKey = getHistoryStorageKey();
             const savedHistory = localStorage.getItem(historyKey);
             if (!savedHistory) return;
 
@@ -723,7 +803,7 @@
         if (!confirm('確定要刪除此紀錄嗎？')) return;
 
         try {
-            const historyKey = STORAGE_HISTORY_PREFIX + currentCourse;
+            const historyKey = getHistoryStorageKey();
             let history = [];
             const savedHistory = localStorage.getItem(historyKey);
             if (savedHistory) {
@@ -752,7 +832,7 @@
         if (!confirm('確定要清除所有歷史紀錄嗎？此操作無法恢復。')) return;
 
         try {
-            const historyKey = STORAGE_HISTORY_PREFIX + currentCourse;
+            const historyKey = getHistoryStorageKey();
             localStorage.removeItem(historyKey);
             
             const historyList = document.getElementById('history-list');
@@ -783,7 +863,7 @@
             hole.score = null;
             hole.putts = null;
         });
-        localStorage.removeItem(STORAGE_KEY_PREFIX + currentCourse);
+        localStorage.removeItem(getScorecardStorageKey());
         renderScorecard();
         const info = document.getElementById('info-text');
         info.innerText = '✅ 所有分數已清除';
@@ -793,7 +873,7 @@
       scorecardVisible = !scorecardVisible;
       document.getElementById('scorecard-panel').style.display = scorecardVisible ? 'block' : 'none';
       if (scorecardVisible) {
-        document.getElementById('coursecard-title').innerText = scorecardData.courseName + ' - 分數卡';
+        document.getElementById('coursecard-title').innerText = scorecardData.courseName + (scorecardData.routingName ? ` (${scorecardData.routingName})` : '') + ' - 分數卡';
         renderScorecard();
       }
     }
@@ -811,8 +891,8 @@
 
       summary.innerHTML = `
         <span>球場名稱：${scorecardData.courseName}</span>
-        <span>前九：${totals.frontPlayedCount ? totals.frontStrokes : '--'} (${totals.frontPlayedCount} 洞) / ${totals.frontPlayedCount ? totals.frontDiffLabel : '--'}</span>
-        <span>後九：${totals.backPlayedCount ? totals.backStrokes : '--'} (${totals.backPlayedCount} 洞) / ${totals.backPlayedCount ? totals.backDiffLabel : '--'}</span>
+        <span>${scorecardData.front9Label || '前九'}：${totals.frontPlayedCount ? totals.frontStrokes : '--'} (${totals.frontPlayedCount} 洞) / ${totals.frontPlayedCount ? totals.frontDiffLabel : '--'}</span>
+        <span>${scorecardData.back9Label || '後九'}：${totals.backPlayedCount ? totals.backStrokes : '--'} (${totals.backPlayedCount} 洞) / ${totals.backPlayedCount ? totals.backDiffLabel : '--'}</span>
         <span>總桿數：${totals.playedCount ? totals.totalStrokes : '--'} (${totals.playedCount ? totals.totalDiffLabel : '--'})</span>
         <span>總推桿數：${totals.puttsCount ? totals.totalPutts : '--'}</span>
       `;
@@ -864,13 +944,13 @@
           <tbody>${rows}</tbody>
           <tfoot>
             <tr>
-              <td colspan="3">前九</td>
+              <td colspan="3">${scorecardData.front9Label || '前九'}</td>
               <td>${scorecardData.front9Totals.blue}</td>
               <td>${scorecardData.front9Totals.white}</td>
               <td>${scorecardData.front9Totals.red}</td>
             </tr>
             <tr>
-              <td colspan="3">後九</td>
+              <td colspan="3">${scorecardData.back9Label || '後九'}</td>
               <td>${scorecardData.back9Totals.blue}</td>
               <td>${scorecardData.back9Totals.white}</td>
               <td>${scorecardData.back9Totals.red}</td>
@@ -1236,21 +1316,23 @@
         });
     }
 
-    map.on('click', (e) => {
-        if (!isMeasureMode) return;
-        if (measurePoints.length >= 2) clearMeasure();
-        const coord = [e.lngLat.lng, e.lngLat.lat];
-        measurePoints.push(coord);
-        const m = new maplibregl.Marker({ color: measurePoints.length === 1 ? '#00e676' : '#ff1744' }).setLngLat(coord).addTo(map);
-        measureMarkers.push(m);
-        if (measurePoints.length === 2) {
-            const dist = new maplibregl.LngLat(measurePoints[0][0], measurePoints[0][1]).distanceTo(new maplibregl.LngLat(measurePoints[1][0], measurePoints[1][1]));
-            document.getElementById('dist-out').innerText = (dist * 1.09361).toFixed(0);
-        }
-    });
+    if (map) {
+        map.on('click', (e) => {
+            if (!isMeasureMode) return;
+            if (measurePoints.length >= 2) clearMeasure();
+            const coord = [e.lngLat.lng, e.lngLat.lat];
+            measurePoints.push(coord);
+            const m = new maplibregl.Marker({ color: measurePoints.length === 1 ? '#00e676' : '#ff1744' }).setLngLat(coord).addTo(map);
+            measureMarkers.push(m);
+            if (measurePoints.length === 2) {
+                const dist = new maplibregl.LngLat(measurePoints[0][0], measurePoints[0][1]).distanceTo(new maplibregl.LngLat(measurePoints[1][0], measurePoints[1][1]));
+                document.getElementById('dist-out').innerText = (dist * 1.09361).toFixed(0);
+            }
+        });
+    }
 
     // 關閉 modal 的額外處理
-    window.onclick = function(event) {
+    window.addEventListener('click', function(event) {
         const historyModal = document.getElementById('historyModal');
         const detailModal = document.getElementById('historyDetailModal');
         if (event.target == historyModal) {
@@ -1259,18 +1341,24 @@
         if (event.target == detailModal) {
             detailModal.style.display = 'none';
         }
-    };
-
-    // 頁面加載時恢復分數卡數據
-    window.addEventListener('DOMContentLoaded', function() {
-        loadScorecardData();
     });
-    
+
+    async function initPage() {
+        initHoleSelectOptions();
+        try {
+            await loadCourseData();
+        } catch (e) {
+            console.error('球場資料載入失敗:', e);
+            setInfo('球場資料載入失敗，請重新整理頁面');
+        }
+    }
+
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', loadScorecardData);
+        document.addEventListener('DOMContentLoaded', initPage);
     } else {
-        loadScorecardData();
+        initPage();
     }
 </script>
 </body>
 </html>
+
