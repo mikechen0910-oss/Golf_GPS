@@ -1,7 +1,7 @@
 {
   "courses": {
     "suncity": {
-      "courseName": "Suncity Golf & Country Club",
+      "courseName": "山溪地高爾夫球場",
       "englishName": "Suncity Golf & Country Club",
       "address": "No.13, Yushanli, Guanxi Township, Hsinchu County, Taiwan",
       "phone": "03-547-6288",
@@ -32,7 +32,7 @@
       ]
     },
     "sinfong": {
-      "courseName": "Sinfong Golf Club",
+      "courseName": "新豐高爾夫球場",
       "englishName": "Sinfong Golf Club",
       "address": "No.104, Kengzikou, Xinfeng Township, Hsinchu County, Taiwan",
       "phone": "03-559-6141",
@@ -96,7 +96,7 @@
       }
     },
     "datun": {
-      "courseName": "Ta Tun Golf Club",
+      "courseName": "大屯高爾夫球場",
       "englishName": "Ta Tun Golf Club",
       "address": "Taipei, Taiwan",
       "phone": "",
