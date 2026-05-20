@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
@@ -15,7 +15,7 @@
         .row { display: flex; gap: 8px; margin-bottom: 8px; }
         select { flex: 1; padding: 10px; border-radius: 8px; border: 2px solid var(--primary); font-size: 15px; font-weight: bold; background: #fff; outline: none; }
         
-        .btn { border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 5px; flex: 1; }
+        .btn { border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 5px; flex: 1; user-select: none; touch-action: manipulation; }
         .btn-blue { background: #0277bd; color: white; }
         .btn-orange { background: #ef6c00; color: white; }
         .btn-green { background: var(--primary); color: white; }
@@ -26,6 +26,7 @@
             background: #1a1a1a; color: #fff; padding: 12px; border-radius: 10px; 
             display: flex; justify-content: space-between; align-items: center; 
             border: 3px solid transparent; border-left: 5px solid var(--accent);
+            cursor: pointer;
         }
         .display-card.active { border: 3px solid var(--active); background: #002e1a; }
         .dist-val { font-size: 38px; font-weight: 900; color: var(--accent); }
@@ -109,11 +110,18 @@
             font-weight: bold;
             cursor: pointer;
             font-size: 12px;
+            user-select: none;
+            touch-action: manipulation;
         }
         .btn-save { background: #4caf50; color: white; }
         .btn-finish { background: #2196f3; color: white; }
         .btn-clear { background: #f44336; color: white; }
         .btn-history { background: #7b1fa2; color: white; }
+
+        .scorecard-table button {
+            user-select: none;
+            touch-action: manipulation;
+        }
 
         /* Modal styles */
         .modal {
@@ -125,6 +133,7 @@
             width: 100%;
             height: 100%;
             background-color: rgba(0,0,0,0.4);
+            overflow: hidden;
         }
         .modal-content {
             background-color: #fefefe;
@@ -189,6 +198,7 @@
             width: 100%;
             height: 100%;
             background-color: rgba(0,0,0,0.5);
+            overflow: hidden;
         }
         .history-detail-content {
             background-color: #fefefe;
@@ -236,7 +246,7 @@
     </div>
 
     <div class="scorecard-panel" id="scorecard-panel" style="display:none;">
-        <h3 id="coursecard-title">山溪地高爾夫俱樂部 - 分數卡</h3>
+        <h3 id="coursecard-title">高爾夫俱樂部 - 分數卡</h3>
         <div class="scorecard-actions">
             <button class="btn-save" onclick="saveScorecardDraft()">💾 暫存</button>
             <button class="btn-finish" onclick="finishScorecard()">✅ 完賽</button>
@@ -248,10 +258,9 @@
     </div>
 </div>
 
-<!-- History Modal -->
 <div id="historyModal" class="modal">
     <div class="modal-content">
-        <span class="modal-close" onclick="closeHistory()">&times;</span>
+        <span class="modal-close" onclick="closeHistory()">×</span>
         <h2 style="color: var(--primary); margin-top: 0;">📊 歷史紀錄</h2>
         <div id="history-list"></div>
         <div style="text-align: center; margin-top: 20px;">
@@ -260,10 +269,9 @@
     </div>
 </div>
 
-<!-- History Detail Modal -->
 <div id="historyDetailModal" class="history-detail-modal">
     <div class="history-detail-content">
-        <span class="modal-close" onclick="closeHistoryDetail()">&times;</span>
+        <span class="modal-close" onclick="closeHistoryDetail()">×</span>
         <h2 id="historyDetailTitle" style="color: var(--primary); margin-top: 0;"></h2>
         <div id="historyDetailBody"></div>
         <div style="text-align: center; margin-top: 20px; display: flex; gap: 10px;">
@@ -298,42 +306,40 @@
         map = new maplibregl.Map({
             container: 'map',
             style: {
-            "version": 8,
-            "sources": {
-                "satellite": {
-                    "type": "raster",
-                    "tiles": ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
-                    "tileSize": 256,
-                    "attribution": "Tiles &copy; Esri",
-                    "maxzoom": 18
-                }
+                "version": 8,
+                "sources": {
+                    "satellite": {
+                        "type": "raster",
+                        "tiles": ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
+                        "tileSize": 256,
+                        "attribution": "Tiles © Esri",
+                        "maxzoom": 18
+                    }
+                },
+                "layers": [{ 
+                    "id": "satellite", 
+                    "type": "raster", 
+                    "source": "satellite",
+                    "paint": { "raster-resampling": "linear" } 
+                }]
             },
-            "layers": [{ 
-                "id": "satellite", 
-                "type": "raster", 
-                "source": "satellite",
-                "paint": { "raster-resampling": "linear" } 
-            }]
-        },
-        center: [121.5, 25.03],
-        zoom: 10,
-        maxZoom: 20,
-        pitch: 45,
-        bearing: 0,
+            center: [121.5, 25.03],
+            zoom: 10,
+            maxZoom: 20,
+            pitch: 45,
+            bearing: 0,
             antialias: true
         });
 
         map.on('load', () => {
             try { map.resize(); } catch(e){}
-            const info = document.getElementById('info-text');
-            if (info) info.innerText = '地圖載入完成';
+            setInfo('地圖載入完成');
         });
 
         window.addEventListener('resize', () => { try { if (map) map.resize(); } catch(e){} });
     } catch (e) {
         console.error('Map init error', e);
-        const info = document.getElementById('info-text');
-        if (info) info.innerText = '地圖初始化失敗：' + (e && e.message ? e.message : e);
+        setInfo('地圖初始化失敗：' + (e && e.message ? e.message : e));
         const m = document.getElementById('map');
         if (m) m.innerHTML = '<div style="color:#fff; padding:20px; text-align:center;">地圖載入失敗，請查看瀏覽器控制台 (Console) 以取得錯誤細節。</div>';
     }
@@ -357,6 +363,12 @@
     let scorecardDataMap = {};
     let scorecardData = null;
     let currentRoutingId = null;
+
+    // 全域輔助訊息顯示函式
+    function setInfo(text) {
+        const info = document.getElementById('info-text');
+        if (info) info.innerText = text;
+    }
 
     function cloneCourseData(course) {
         return JSON.parse(JSON.stringify(course));
@@ -494,8 +506,7 @@
                 document.getElementById('coursecard-title').innerText = scorecardData.courseName + (scorecardData.routingName ? ` (${scorecardData.routingName})` : '') + ' - 分數卡';
                 renderScorecard();
             }
-            const info = document.getElementById('info-text');
-            info.innerText = `已切換至 ${scorecardData.courseName}`;
+            setInfo(`已切換至 ${scorecardData.courseName}`);
         }
     }
 
@@ -513,11 +524,10 @@
     }
 
     function locateGPS() {
-        const info = document.getElementById('info-text');
-        info.innerText = "🛰️ 衛星定位中...";
+        setInfo("🛰️ 衛星定位中...");
         
         if (!navigator.geolocation) {
-            info.innerText = "您的瀏覽器不支援地理定位";
+            setInfo("您的瀏覽器不支援地理定位");
             return;
         }
         
@@ -540,7 +550,7 @@
                         el.className = 'user-marker';
                         userMarker = new maplibregl.Marker({ element: el }).setLngLat([avgLng, avgLat]).addTo(map);
                         map.flyTo({ center: [avgLng, avgLat], zoom: 18, pitch: 50, speed: 1.2 });
-                        info.innerText = `位置已更新 (平均 ${positions.length} 次讀取)`;
+                        setInfo(`位置已更新 (平均 ${positions.length} 次讀取)`);
                         startPositionWatch();
                         setTimeout(() => getWeatherAtLocation([avgLng, avgLat]), 1500);
                     }
@@ -556,7 +566,7 @@
                     if (attempts < maxAttempts) {
                         setTimeout(getPosition, 1500);
                     } else {
-                        info.innerText = `定位失敗 (${errMsg})`;
+                        setInfo(`定位失敗 (${errMsg})`);
                     }
                 },
                 { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
@@ -589,20 +599,17 @@
         try {
             const toSave = JSON.parse(JSON.stringify(scorecardData));
             localStorage.setItem(getScorecardStorageKey(), JSON.stringify(toSave));
-            const info = document.getElementById('info-text');
-            info.innerText = '💾 分數卡已暫存（未完賽）';
+            setInfo('💾 分數卡已暫存（未完賽）');
             console.log('分數卡暫存：' + getScorecardStorageKey());
         } catch (e) {
             console.error('暫存分數卡失敗:', e);
-            const info = document.getElementById('info-text');
-            info.innerText = '❌ 暫存失敗';
+            setInfo('❌ 暫存失敗');
         }
     }
 
     function finishScorecard() {
         const totals = calculateScoreTotals();
         
-        // 至少需要完成一個洞
         if (totals.playedCount === 0) {
             alert('請至少輸入一個洞的成績後再完賽');
             return;
@@ -612,7 +619,6 @@
         if (!confirmed) return;
 
         try {
-            // 建立歷史記錄
             const now = new Date();
             const timestamp = now.getTime();
             const dateStr = now.toLocaleString('zh-TW');
@@ -629,7 +635,6 @@
                 totals: totals
             };
 
-            // 取得現有歷史記錄
             let history = [];
             const historyKey = getHistoryStorageKey();
             const savedHistory = localStorage.getItem(historyKey);
@@ -637,28 +642,23 @@
                 history = JSON.parse(savedHistory);
             }
 
-            // 添加新記錄
             history.push(historyRecord);
             localStorage.setItem(historyKey, JSON.stringify(history));
 
-            // 清除暫存
             localStorage.removeItem(getScorecardStorageKey());
             
-            // 清空目前分數卡
             scorecardData.holes.forEach(hole => {
                 hole.score = null;
                 hole.putts = null;
             });
 
             renderScorecard();
-            const info = document.getElementById('info-text');
-            info.innerText = `✅ 完賽已保存！總桿數：${totals.totalStrokes}`;
+            setInfo(`✅ 完賽已保存！總桿數：${totals.totalStrokes}`);
             
             console.log('分數卡完賽保存：', historyRecord);
         } catch (e) {
             console.error('完賽保存失敗:', e);
-            const info = document.getElementById('info-text');
-            info.innerText = '❌ 完賽保存失敗';
+            setInfo('❌ 完賽保存失敗');
         }
     }
 
@@ -671,7 +671,6 @@
                 history = JSON.parse(savedHistory);
             }
 
-            // 按時間反序排列（最新的在前）
             history.sort((a, b) => b.timestamp - a.timestamp);
 
             const historyList = document.getElementById('history-list');
@@ -717,7 +716,6 @@
             const body = document.getElementById('historyDetailBody');
             const totals = record.totals;
 
-            // 統計信息
             let statsHtml = `
                 <div class="scorecard-summary">
                     <span>總桿數：${totals.totalStrokes}</span>
@@ -727,7 +725,6 @@
                 </div>
             `;
 
-            // 詳細成績表
             const rows = record.holes.filter(h => h.score !== null && h.score !== undefined).map(h => {
                 const scoreValue = h.score !== null && h.score !== undefined ? h.score : '--';
                 const puttsValue = h.putts !== null && h.putts !== undefined ? h.putts : '--';
@@ -791,8 +788,7 @@
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
 
-            const info = document.getElementById('info-text');
-            info.innerText = '📥 JSON 檔案已下載';
+            setInfo('📥 JSON 檔案已下載');
         } catch (e) {
             console.error('匯出失敗:', e);
             alert('匯出失敗');
@@ -820,8 +816,7 @@
 
             closeHistoryDetail();
             showHistory();
-            const info = document.getElementById('info-text');
-            info.innerText = '✅ 紀錄已刪除';
+            setInfo('✅ 紀錄已刪除');
         } catch (e) {
             console.error('刪除失敗:', e);
             alert('刪除失敗');
@@ -838,8 +833,7 @@
             const historyList = document.getElementById('history-list');
             historyList.innerHTML = '<p style="color: #666; text-align: center;">暫無歷史紀錄</p>';
             
-            const info = document.getElementById('info-text');
-            info.innerText = '✅ 所有歷史紀錄已清除';
+            setInfo('✅ 所有歷史紀錄已清除');
         } catch (e) {
             console.error('清除歷史失敗:', e);
             alert('清除失敗');
@@ -865,200 +859,197 @@
         });
         localStorage.removeItem(getScorecardStorageKey());
         renderScorecard();
-        const info = document.getElementById('info-text');
-        info.innerText = '✅ 所有分數已清除';
+        setInfo('✅ 所有分數已清除');
     }
 
     function toggleScorecard() {
-      scorecardVisible = !scorecardVisible;
-      document.getElementById('scorecard-panel').style.display = scorecardVisible ? 'block' : 'none';
-      if (scorecardVisible) {
-        document.getElementById('coursecard-title').innerText = scorecardData.courseName + (scorecardData.routingName ? ` (${scorecardData.routingName})` : '') + ' - 分數卡';
-        renderScorecard();
-      }
+        scorecardVisible = !scorecardVisible;
+        document.getElementById('scorecard-panel').style.display = scorecardVisible ? 'block' : 'none';
+        if (scorecardVisible) {
+            document.getElementById('coursecard-title').innerText = scorecardData.courseName + (scorecardData.routingName ? ` (${scorecardData.routingName})` : '') + ' - 分數卡';
+            renderScorecard();
+        }
     }
 
     function handleHoleSelectChange() {
-      renderFeatures();
-      if (scorecardVisible) renderScorecard();
+        renderFeatures();
+        if (scorecardVisible) renderScorecard();
     }
 
     function renderScorecard() {
-      const summary = document.getElementById('scorecard-summary');
-      const content = document.getElementById('scorecard-content');
-      const selectedHole = document.getElementById('hole-select').value;
-      const totals = calculateScoreTotals();
+        const summary = document.getElementById('scorecard-summary');
+        const content = document.getElementById('scorecard-content');
+        const selectedHole = document.getElementById('hole-select').value;
+        const totals = calculateScoreTotals();
 
-      summary.innerHTML = `
-        <span>球場名稱：${scorecardData.courseName}</span>
-        <span>${scorecardData.front9Label || '前九'}：${totals.frontPlayedCount ? totals.frontStrokes : '--'} (${totals.frontPlayedCount} 洞) / ${totals.frontPlayedCount ? totals.frontDiffLabel : '--'}</span>
-        <span>${scorecardData.back9Label || '後九'}：${totals.backPlayedCount ? totals.backStrokes : '--'} (${totals.backPlayedCount} 洞) / ${totals.backPlayedCount ? totals.backDiffLabel : '--'}</span>
-        <span>總桿數：${totals.playedCount ? totals.totalStrokes : '--'} (${totals.playedCount ? totals.totalDiffLabel : '--'})</span>
-        <span>總推桿數：${totals.puttsCount ? totals.totalPutts : '--'}</span>
-      `;
+        summary.innerHTML = `
+            <span>球場名稱：${scorecardData.courseName}</span>
+            <span>${scorecardData.front9Label || '前九'}：${totals.frontPlayedCount ? totals.frontStrokes : '--'} (${totals.frontPlayedCount} 洞) / ${totals.frontPlayedCount ? totals.frontDiffLabel : '--'}</span>
+            <span>${scorecardData.back9Label || '後九'}：${totals.backPlayedCount ? totals.backStrokes : '--'} (${totals.backPlayedCount} 洞) / ${totals.backPlayedCount ? totals.backDiffLabel : '--'}</span>
+            <span>總桿數：${totals.playedCount ? totals.totalStrokes : '--'} (${totals.playedCount ? totals.totalDiffLabel : '--'})</span>
+            <span>總推桿數：${totals.puttsCount ? totals.totalPutts : '--'}</span>
+        `;
 
-      const rows = scorecardData.holes.map(h => {
-        const activeClass = selectedHole === String(h.number) ? 'scorecard-row active' : 'scorecard-row';
-        const scoreValue = h.score !== null && h.score !== undefined ? h.score : '';
-        const puttsValue = h.putts !== null && h.putts !== undefined ? h.putts : '';
-                return `
-                    <tr class="${activeClass}" onclick="selectHole(${h.number})">
-                        <td>${h.number}</td>
-                        <td>${h.par}</td>
-                        <td>${h.hdcp}</td>
-                        <td>${h.distances.blue}</td>
-                        <td>${h.distances.white}</td>
-                        <td>${h.distances.red}</td>
-                        <td>
-                            <div style="display:flex; align-items:center; justify-content:center; gap:4px;">
-                                <button data-hole="${h.number}" data-field="score" data-action="minus" style="width:28px; height:28px; padding:0; border-radius:4px; border:1px solid #ccc; background:#fafafa; cursor:pointer; font-weight:bold;">−</button>
-                                <input type="number" min="1" max="15" value="${scoreValue}" data-hole="${h.number}" data-field="score" class="hole-input" style="width:50px; padding:6px; border-radius:4px; border:1px solid #ddd; text-align:center;">
-                                <button data-hole="${h.number}" data-field="score" data-action="plus" style="width:28px; height:28px; padding:0; border-radius:4px; border:1px solid #ccc; background:#fafafa; cursor:pointer; font-weight:bold;">+</button>
-                                ${getScoreIcon(h)}
-                            </div>
-                        </td>
-                        <td>
-                            <div style="display:flex; align-items:center; justify-content:center; gap:4px;">
-                                <button data-hole="${h.number}" data-field="putts" data-action="minus" style="width:28px; height:28px; padding:0; border-radius:4px; border:1px solid #ccc; background:#fafafa; cursor:pointer; font-weight:bold;">−</button>
-                                <input type="number" min="0" max="10" value="${puttsValue}" data-hole="${h.number}" data-field="putts" class="hole-input" style="width:50px; padding:6px; border-radius:4px; border:1px solid #ddd; text-align:center;">
-                                <button data-hole="${h.number}" data-field="putts" data-action="plus" style="width:28px; height:28px; padding:0; border-radius:4px; border:1px solid #ccc; background:#fafafa; cursor:pointer; font-weight:bold;">+</button>
-                            </div>
-                        </td>
-                    </tr>`;
-      }).join('');
+        const rows = scorecardData.holes.map(h => {
+            const activeClass = selectedHole === String(h.number) ? 'scorecard-row active' : 'scorecard-row';
+            const scoreValue = h.score !== null && h.score !== undefined ? h.score : '';
+            const puttsValue = h.putts !== null && h.putts !== undefined ? h.putts : '';
+            return `
+                <tr class="${activeClass}" onclick="selectHole(${h.number})">
+                    <td>${h.number}</td>
+                    <td>${h.par}</td>
+                    <td>${h.hdcp}</td>
+                    <td>${h.distances.blue}</td>
+                    <td>${h.distances.white}</td>
+                    <td>${h.distances.red}</td>
+                    <td>
+                        <div style="display:flex; align-items:center; justify-content:center; gap:4px;">
+                            <button data-hole="${h.number}" data-field="score" data-action="minus" style="width:28px; height:28px; padding:0; border-radius:4px; border:1px solid #ccc; background:#fafafa; cursor:pointer; font-weight:bold;">−</button>
+                            <input type="number" min="1" max="15" value="${scoreValue}" data-hole="${h.number}" data-field="score" class="hole-input" style="width:50px; padding:6px; border-radius:4px; border:1px solid #ddd; text-align:center;">
+                            <button data-hole="${h.number}" data-field="score" data-action="plus" style="width:28px; height:28px; padding:0; border-radius:4px; border:1px solid #ccc; background:#fafafa; cursor:pointer; font-weight:bold;">+</button>
+                            ${getScoreIcon(h)}
+                        </div>
+                    </td>
+                    <td>
+                        <div style="display:flex; align-items:center; justify-content:center; gap:4px;">
+                            <button data-hole="${h.number}" data-field="putts" data-action="minus" style="width:28px; height:28px; padding:0; border-radius:4px; border:1px solid #ccc; background:#fafafa; cursor:pointer; font-weight:bold;">−</button>
+                            <input type="number" min="0" max="10" value="${puttsValue}" data-hole="${h.number}" data-field="putts" class="hole-input" style="width:50px; padding:6px; border-radius:4px; border:1px solid #ddd; text-align:center;">
+                            <button data-hole="${h.number}" data-field="putts" data-action="plus" style="width:28px; height:28px; padding:0; border-radius:4px; border:1px solid #ccc; background:#fafafa; cursor:pointer; font-weight:bold;">+</button>
+                        </div>
+                    </td>
+                </tr>`;
+        }).join('');
 
-      content.innerHTML = `
-        <table class="scorecard-table">
-          <thead>
-                        <tr>
-                            <th>洞號</th>
-                            <th>標準桿</th>
-                            <th>桿差</th>
-                            <th>藍標</th>
-                            <th>白標</th>
-                            <th>紅標</th>
-                            <th>桿數</th>
-                            <th>推桿</th>
-                        </tr>
-          </thead>
-          <tbody>${rows}</tbody>
-          <tfoot>
-            <tr>
-              <td colspan="3">${scorecardData.front9Label || '前九'}</td>
-              <td>${scorecardData.front9Totals.blue}</td>
-              <td>${scorecardData.front9Totals.white}</td>
-              <td>${scorecardData.front9Totals.red}</td>
-            </tr>
-            <tr>
-              <td colspan="3">${scorecardData.back9Label || '後九'}</td>
-              <td>${scorecardData.back9Totals.blue}</td>
-              <td>${scorecardData.back9Totals.white}</td>
-              <td>${scorecardData.back9Totals.red}</td>
-            </tr>
-          </tfoot>
-        </table>
-      `;
-      
-      setTimeout(() => {
-        const inputs = content.querySelectorAll('.hole-input');
+        content.innerHTML = `
+            <table class="scorecard-table">
+                <thead>
+                    <tr>
+                        <th>洞號</th>
+                        <th>標準桿</th>
+                        <th>桿差</th>
+                        <th>藍標</th>
+                        <th>白標</th>
+                        <th>紅標</th>
+                        <th>桿數</th>
+                        <th>推桿</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="3">${scorecardData.front9Label || '前九'}</td>
+                        <td>${scorecardData.front9Totals.blue}</td>
+                        <td>${scorecardData.front9Totals.white}</td>
+                        <td>${scorecardData.front9Totals.red}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="3">${scorecardData.back9Label || '後九'}</td>
+                        <td>${scorecardData.back9Totals.blue}</td>
+                        <td>${scorecardData.back9Totals.white}</td>
+                        <td>${scorecardData.back9Totals.red}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        `;
         
-        inputs.forEach(input => {
-          const handleChange = () => {
-            const hole = parseInt(input.dataset.hole, 10);
-            const field = input.dataset.field;
-            const value = input.value;
-            updateHoleValue(hole, field, value);
-          };
-          input.addEventListener('input', handleChange);
-          input.addEventListener('change', handleChange);
-          input.addEventListener('blur', handleChange);
-        });
-        
-        content.querySelectorAll('button[data-action]').forEach((btn) => {
-          btn.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
+        setTimeout(() => {
+            const inputs = content.querySelectorAll('.hole-input');
             
-            const hole = parseInt(this.dataset.hole, 10);
-            const field = String(this.dataset.field).trim();
-            const action = String(this.dataset.action).trim();
+            inputs.forEach(input => {
+                const handleChange = () => {
+                    const hole = parseInt(input.dataset.hole, 10);
+                    const field = input.dataset.field;
+                    const value = input.value;
+                    updateHoleValue(hole, field, value);
+                };
+                input.addEventListener('input', handleChange);
+                input.addEventListener('change', handleChange);
+                input.addEventListener('blur', handleChange);
+            });
             
-            const hole_obj = scorecardData.holes.find(h => h.number === hole);
-            if (!hole_obj) {
-              console.warn('Hole not found:', hole);
-              return;
-            }
-            
-            const currentValue = (hole_obj[field] !== null && hole_obj[field] !== undefined) ? Number(hole_obj[field]) : 0;
-            let newValue = currentValue;
-            
-            if (action === 'plus') {
-              newValue = currentValue + 1;
-              if (field === 'score' && newValue > 15) newValue = 15;
-              if (field === 'putts' && newValue > 10) newValue = 10;
-            } else if (action === 'minus') {
-              newValue = Math.max(field === 'score' ? 1 : 0, currentValue - 1);
-            }
-            
-            console.log(`Updating hole ${hole}, field ${field} to ${newValue}`);
-            updateHoleValue(hole, field, newValue);
-          }, false);
-        });
-      }, 10);
+            content.querySelectorAll('button[data-action]').forEach((btn) => {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const hole = parseInt(this.dataset.hole, 10);
+                    const field = String(this.dataset.field).trim();
+                    const action = String(this.dataset.action).trim();
+                    
+                    const hole_obj = scorecardData.holes.find(h => h.number === hole);
+                    if (!hole_obj) {
+                        console.warn('Hole not found:', hole);
+                        return;
+                    }
+                    
+                    const currentValue = (hole_obj[field] !== null && hole_obj[field] !== undefined) ? Number(hole_obj[field]) : 0;
+                    let newValue = currentValue;
+                    
+                    if (action === 'plus') {
+                        newValue = currentValue + 1;
+                        if (field === 'score' && newValue > 15) newValue = 15;
+                        if (field === 'putts' && newValue > 10) newValue = 10;
+                    } else if (action === 'minus') {
+                        newValue = Math.max(field === 'score' ? 1 : 0, currentValue - 1);
+                    }
+                    
+                    console.log(`Updating hole ${hole}, field ${field} to ${newValue}`);
+                    updateHoleValue(hole, field, newValue);
+                }, false);
+            });
+        }, 10);
     }
 
     function selectHole(number) {
-      document.getElementById('hole-select').value = number;
-      renderFeatures();
-      renderScorecard();
-      const info = document.getElementById('info-text');
-      info.innerText = `已選擇第 ${number} 洞`;
+        document.getElementById('hole-select').value = number;
+        renderFeatures();
+        renderScorecard();
+        setInfo(`已選擇第 ${number} 洞`);
     }
 
     function updateHoleValue(number, field, value) {
-      const hole = scorecardData.holes.find(h => h.number === number);
-      hole[field] = value ? Number(value) : null;
-      renderScorecard();
-      const info = document.getElementById('info-text');
-            const label = field === 'score' ? '桿數' : '推桿';
-      info.innerText = `已更新第 ${number} 洞 ${label}：${value || '未輸入'}`;
+        const hole = scorecardData.holes.find(h => h.number === number);
+        hole[field] = value ? Number(value) : null;
+        renderScorecard();
+        const label = field === 'score' ? '桿數' : '推桿';
+        setInfo(`已更新第 ${number} 洞 ${label}：${value || '未輸入'}`);
     }
 
     function calculateScoreTotals() {
-      const frontHoles = scorecardData.holes.slice(0, 9);
-      const backHoles = scorecardData.holes.slice(9, 18);
-      const frontPlayedHoles = frontHoles.filter(h => h.score !== null && h.score !== undefined && h.score !== '');
-      const backPlayedHoles = backHoles.filter(h => h.score !== null && h.score !== undefined && h.score !== '');
-      const totalPlayedHoles = scorecardData.holes.filter(h => h.score !== null && h.score !== undefined && h.score !== '');
-      const frontStrokes = frontPlayedHoles.reduce((sum, h) => sum + h.score, 0);
-      const backStrokes = backPlayedHoles.reduce((sum, h) => sum + h.score, 0);
-      const frontPutts = frontHoles.filter(h => h.putts !== null && h.putts !== undefined && h.putts !== '').reduce((sum, h) => sum + h.putts, 0);
-      const backPutts = backHoles.filter(h => h.putts !== null && h.putts !== undefined && h.putts !== '').reduce((sum, h) => sum + h.putts, 0);
-      const totalStrokes = frontStrokes + backStrokes;
-      const totalPutts = frontPutts + backPutts;
-      const puttsCount = scorecardData.holes.filter(h => h.putts !== null && h.putts !== undefined && h.putts !== '').length;
-      const frontPar = frontPlayedHoles.reduce((sum, h) => sum + h.par, 0);
-      const backPar = backPlayedHoles.reduce((sum, h) => sum + h.par, 0);
-      const totalPar = totalPlayedHoles.reduce((sum, h) => sum + h.par, 0);
-      const frontDiff = frontStrokes - frontPar;
-      const backDiff = backStrokes - backPar;
-      const totalDiff = totalStrokes - totalPar;
-      const formatDiff = diff => diff === 0 ? 'E' : diff > 0 ? `+${diff}` : `${diff}`;
-      return {
-        totalStrokes,
-        totalPutts,
-        puttsCount,
-        playedCount: totalPlayedHoles.length,
-        frontStrokes,
-        backStrokes,
-        frontPutts,
-        backPutts,
-        frontPlayedCount: frontPlayedHoles.length,
-        backPlayedCount: backPlayedHoles.length,
-        frontDiffLabel: frontPlayedHoles.length ? formatDiff(frontDiff) : '--',
-        backDiffLabel: backPlayedHoles.length ? formatDiff(backDiff) : '--',
-        totalDiffLabel: totalPlayedHoles.length ? formatDiff(totalDiff) : '--'
-      };
+        const frontHoles = scorecardData.holes.slice(0, 9);
+        const backHoles = scorecardData.holes.slice(9, 18);
+        const frontPlayedHoles = frontHoles.filter(h => h.score !== null && h.score !== undefined && h.score !== '');
+        const backPlayedHoles = backHoles.filter(h => h.score !== null && h.score !== undefined && h.score !== '');
+        const totalPlayedHoles = scorecardData.holes.filter(h => h.score !== null && h.score !== undefined && h.score !== '');
+        const frontStrokes = frontPlayedHoles.reduce((sum, h) => sum + h.score, 0);
+        const backStrokes = backPlayedHoles.reduce((sum, h) => sum + h.score, 0);
+        const frontPutts = frontHoles.filter(h => h.putts !== null && h.putts !== undefined && h.putts !== '').reduce((sum, h) => sum + h.putts, 0);
+        const backPutts = backHoles.filter(h => h.putts !== null && h.putts !== undefined && h.putts !== '').reduce((sum, h) => sum + h.putts, 0);
+        const totalStrokes = frontStrokes + backStrokes;
+        const totalPutts = frontPutts + backPutts;
+        const puttsCount = scorecardData.holes.filter(h => h.putts !== null && h.putts !== undefined && h.putts !== '').length;
+        const frontPar = frontPlayedHoles.reduce((sum, h) => sum + h.par, 0);
+        const backPar = backPlayedHoles.reduce((sum, h) => sum + h.par, 0);
+        const totalPar = totalPlayedHoles.reduce((sum, h) => sum + h.par, 0);
+        const frontDiff = frontStrokes - frontPar;
+        const backDiff = backStrokes - backPar;
+        const totalDiff = totalStrokes - totalPar;
+        const formatDiff = diff => diff === 0 ? 'E' : diff > 0 ? `+${diff}` : `${diff}`;
+        return {
+            totalStrokes,
+            totalPutts,
+            puttsCount,
+            playedCount: totalPlayedHoles.length,
+            frontStrokes,
+            backStrokes,
+            frontPutts,
+            backPutts,
+            frontPlayedCount: frontPlayedHoles.length,
+            backPlayedCount: backPlayedHoles.length,
+            frontDiffLabel: frontPlayedHoles.length ? formatDiff(frontDiff) : '--',
+            backDiffLabel: backPlayedHoles.length ? formatDiff(backDiff) : '--',
+            totalDiffLabel: totalPlayedHoles.length ? formatDiff(totalDiff) : '--'
+        };
     }
 
     function getScoreIcon(h) {
@@ -1123,11 +1114,10 @@
     }
 
     async function getWeatherAtLocation(coord) {
-        const info = document.getElementById('info-text');
         try {
             const lat = coord[1];
             const lon = coord[0];
-            if (info) info.innerText = '取得天氣資料...';
+            setInfo('取得天氣資料...');
             const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&timezone=auto`;
             const res = await fetch(url);
             if (!res.ok) throw new Error('Weather API error');
@@ -1141,19 +1131,18 @@
                     return dirs[Math.round(((deg %= 360) < 0 ? deg + 360 : deg) / 45) % 8];
                 })(windDir);
                 drawWindDirection({ lng: lon, lat: lat }, windDir, windSpeed, windDirection);
-                if (info) info.innerText = `風向 ${windDirection} (${Math.round(windDir)}°)，風速 ${windSpeed} km/h`;
+                setInfo(`風向 ${windDirection} (${Math.round(windDir)}°)，風速 ${windSpeed} km/h`);
             } else {
-                if (info) info.innerText = '無法取得天氣資訊';
+                setInfo('無法取得天氣資訊');
             }
         } catch (e) {
             console.error('getWeatherAtLocation error', e);
-            if (info) info.innerText = '天氣資訊獲取失敗';
+            setInfo('天氣資訊獲取失敗');
         }
     }
 
     async function findCourses() {
-        const info = document.getElementById('info-text');
-        info.innerText = "🔍 搜尋附近球場...";
+        setInfo("🔍 搜尋附近球場...");
         courseMarkers.forEach(m => m.remove());
         courseMarkers = [];
         const b = map.getBounds();
@@ -1177,13 +1166,12 @@
                     courseMarkers.push(m);
                 }
             });
-            info.innerText = `發現 ${data.elements.length} 個球場`;
-        } catch (e) { info.innerText = "連線逾時"; }
+            setInfo(`發現 ${data.elements.length} 個球場`);
+        } catch (e) { setInfo("連線逾時"); }
     }
 
     async function scanFacilities() {
-        const info = document.getElementById('info-text');
-        info.innerText = "🌿 疊加地形數據...";
+        setInfo("🌿 疊加地形數據...");
         const b = map.getBounds();
         const bbox = `${b.getSouth()},${b.getWest()},${b.getNorth()},${b.getEast()}`;
         const query = `[out:json];(nwr["golf"](${bbox});nwr["natural"="water"](${bbox}););out geom;`;
@@ -1202,8 +1190,8 @@
                 }
             });
             renderFeatures();
-            info.innerText = `設施已同步 (3D) - 發現 ${Object.keys(holePositions).length} 個洞`;
-        } catch (e) { info.innerText = "掃描失敗"; }
+            setInfo(`設施已同步 (3D) - 發現 ${Object.keys(holePositions).length} 個洞`);
+        } catch (e) { setInfo("掃描失敗"); }
     }
 
     function renderFeatures() {
@@ -1237,14 +1225,13 @@
     function toggleMeasureMode() {
         isMeasureMode = !isMeasureMode;
         const status = document.getElementById('status-title');
-        const info = document.getElementById('info-text');
         if (isMeasureMode) {
             if (status) status.innerText = '測距功能開啟';
-            if (info) info.innerText = '請於地圖上點選兩個點以測量距離';
+            setInfo('請於地圖上點選兩個點以測量距離');
             clearMeasure();
         } else {
             if (status) status.innerText = '測距功能關閉';
-            if (info) info.innerText = '支援深層縮放無視覺斷層';
+            setInfo('支援深層縮放無視覺斷層');
             clearMeasure();
         }
     }
@@ -1286,8 +1273,7 @@
             }
             const out = document.getElementById('dist-out');
             if (out) out.innerText = '--';
-            const info = document.getElementById('info-text');
-            if (info) info.innerText = '測距已清除';
+            setInfo('測距已清除');
         } catch(e) { console.error('clearMeasure error', e); }
     }
 
@@ -1297,22 +1283,21 @@
             windMarker.remove();
             windMarker = null;
         }
-        const info = document.getElementById('info-text');
-        info.innerText = "所有疊加已清除";
+        setInfo("所有疊加已清除");
     }
 
     function shareLocation() {
-        const info = document.getElementById('info-text');
         if (!userMarker) {
-            info.innerText = "請先定位您的位置";
+            setInfo("請先定位您的位置");
             return;
         }
         const pos = userMarker.getLngLat();
-        const url = `https://www.google.com/maps/@${pos.lat},${pos.lng},18z`;
+        // 修正原先 {} 大括號擺放與字串結構錯誤
+        const url = `https://www.google.com/maps?q=${pos.lat},${pos.lng}`;
         navigator.clipboard.writeText(url).then(() => {
-            info.innerText = "位置連結已複製到剪貼簿";
+            setInfo("位置連結已複製到剪貼簿");
         }).catch(() => {
-            info.innerText = `分享連結: ${url}`;
+            setInfo(`分享連結: ${url}`);
         });
     }
 
@@ -1324,14 +1309,33 @@
             measurePoints.push(coord);
             const m = new maplibregl.Marker({ color: measurePoints.length === 1 ? '#00e676' : '#ff1744' }).setLngLat(coord).addTo(map);
             measureMarkers.push(m);
+            
             if (measurePoints.length === 2) {
                 const dist = new maplibregl.LngLat(measurePoints[0][0], measurePoints[0][1]).distanceTo(new maplibregl.LngLat(measurePoints[1][0], measurePoints[1][1]));
                 document.getElementById('dist-out').innerText = (dist * 1.09361).toFixed(0);
+                
+                // 補齊：在地圖上真正繪製測距軌跡線 (measure-line)
+                map.addSource('measure-src', {
+                    'type': 'geojson',
+                    'data': {
+                        'type': 'Feature',
+                        'geometry': {
+                            'type': 'LineString',
+                            'coordinates': measurePoints
+                        }
+                    }
+                });
+                map.addLayer({
+                    'id': 'measure-line',
+                    'type': 'line',
+                    'source': 'measure-src',
+                    'layout': { 'line-join': 'round', 'line-cap': 'round' },
+                    'paint': { 'line-color': '#ffeb3b', 'line-width': 4, 'line-dasharray': [2, 2] }
+                });
             }
         });
     }
 
-    // 關閉 modal 的額外處理
     window.addEventListener('click', function(event) {
         const historyModal = document.getElementById('historyModal');
         const detailModal = document.getElementById('historyDetailModal');
@@ -1361,4 +1365,3 @@
 </script>
 </body>
 </html>
-
