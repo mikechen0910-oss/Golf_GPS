@@ -15,18 +15,17 @@
         });
     })();
 
-    let allElements = [];
     let measurePoints = [];
     let measureMarkers = [];
     let courseMarkers = [];
     let userMarker = null;
     let isMeasureMode = false;
-    let holePositions = {};
     let windMarker = null;
     let scorecardVisible = false;
     let positionWatchId = null;
     let currentCourse = 'suncity';
     let currentHistoryId = null;
+    let selectedScorecardHole = null;
 
     const STORAGE_KEY_PREFIX = 'golfGpsScorecard_';
     const STORAGE_HISTORY_PREFIX = 'golfGpsHistory_';
@@ -179,25 +178,12 @@
         loadScorecardData();
     }
 
-    function initHoleSelectOptions() {
-        const select = document.getElementById('hole-select');
-        if (!select || select.dataset.initialized === 'true') return;
-        const frag = document.createDocumentFragment();
-        for (let i = 1; i <= 18; i++) {
-            const opt = document.createElement('option');
-            opt.value = String(i);
-            opt.textContent = `第 ${i} 洞 (Hole ${i})`;
-            frag.appendChild(opt);
-        }
-        select.appendChild(frag);
-        select.dataset.initialized = 'true';
-    }
-
     function handleCourseChange() {
         if (!Object.keys(scorecardDataMap).length) return;
         const selected = document.getElementById('course-select').value;
         if (selected !== currentCourse) {
             currentCourse = selected;
+            selectedScorecardHole = null;
             initRoutingOptions();
             renderCourseLinks();
             scorecardData = buildScorecardData(scorecardDataMap[currentCourse], currentRoutingId);
@@ -216,6 +202,7 @@
         currentRoutingId = select.value || null;
         const course = getCurrentCourseMeta();
         if (!course) return;
+        selectedScorecardHole = null;
         scorecardData = buildScorecardData(course, currentRoutingId);
         loadScorecardData();
         if (scorecardVisible) renderScorecard();

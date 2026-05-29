@@ -294,15 +294,9 @@
         }
     }
 
-    function handleHoleSelectChange() {
-        renderFeatures();
-        if (scorecardVisible) renderScorecard();
-    }
-
     function renderScorecard() {
         const summary = document.getElementById('scorecard-summary');
         const content = document.getElementById('scorecard-content');
-        const selectedHole = document.getElementById('hole-select').value;
         const totals = calculateScoreTotals();
 
         summary.innerHTML = `
@@ -314,7 +308,7 @@
         `;
 
         const rows = scorecardData.holes.map(h => {
-            const activeClass = selectedHole === String(h.number) ? 'scorecard-row active' : 'scorecard-row';
+            const activeClass = selectedScorecardHole === h.number ? 'scorecard-row active' : 'scorecard-row';
             const scoreValue = h.score !== null && h.score !== undefined ? h.score : '';
             const puttsValue = h.putts !== null && h.putts !== undefined ? h.putts : '';
             return `
@@ -424,8 +418,7 @@
     }
 
     function selectHole(number) {
-        document.getElementById('hole-select').value = number;
-        renderFeatures();
+        selectedScorecardHole = number;
         renderScorecard();
         setInfo(`已選擇第 ${number} 洞`);
     }

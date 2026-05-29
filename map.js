@@ -159,7 +159,6 @@ let map = null;
                     div.innerHTML = `⛳ ${el.tags.name}`;
                     div.onclick = () => {
                         map.flyTo({ center: [lon, lat], zoom: 18, pitch: 45 });
-                        setTimeout(scanFacilities, 1000);
                     };
                     const m = new maplibregl.Marker({ element: div }).setLngLat([lon, lat]).addTo(map);
                     courseMarkers.push(m);
@@ -167,58 +166,6 @@ let map = null;
             });
             setInfo(`發現 ${data.elements.length} 個球場`);
         } catch (e) { setInfo("連線逾時"); }
-    }
-
-    async function scanFacilities() {
-        setInfo("🌿 疊加地形數據...");
-        const b = map.getBounds();
-        const bbox = `${b.getSouth()},${b.getWest()},${b.getNorth()},${b.getEast()}`;
-        const query = `[out:json];(nwr["golf"](${bbox});nwr["natural"="water"](${bbox}););out geom;`;
-        try {
-            const res = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`);
-            const data = await res.json();
-            allElements = data.elements;
-            holePositions = {};
-            allElements.forEach(el => {
-                if (el.tags && el.tags['golf:hole_number']) {
-                    const holeNum = el.tags['golf:hole_number'];
-                    if (el.geometry && el.geometry.length > 0) {
-                        const center = el.geometry[Math.floor(el.geometry.length / 2)];
-                        holePositions[holeNum] = [center.lon, center.lat];
-                    }
-                }
-            });
-            renderFeatures();
-            setInfo(`設施已同步 (3D) - 發現 ${Object.keys(holePositions).length} 個洞`);
-        } catch (e) { setInfo("掃描失敗"); }
-    }
-
-    function renderFeatures() {
-        if (!allElements.length) return;
-        const holeNum = document.getElementById('hole-select').value;
-        const features = allElements.filter(el => {
-            if (holeNum === 'all') return true;
-            const ref = el.tags ? (el.tags.ref || el.tags['golf:hole_number']) : null;
-            return ref === holeNum;
-        }).map(el => {
-            let type = el.tags ? (el.tags.golf || el.tags.natural || 'other') : 'other';
-            return {
-                type: "Feature", properties: { type: type },
-                geometry: el.type === 'way' && el.geometry ? { type: "Polygon", coordinates: [el.geometry.map(g => [g.lon, g.lat])] } : null
-            };
-        }).filter(f => f.geometry);
-
-        if (map.getLayer('golf-layer')) map.removeLayer('golf-layer');
-        if (map.getSource('golf-src')) map.removeSource('golf-src');
-        map.addSource('golf-src', { type: 'geojson', data: { type: 'FeatureCollection', features: features } });
-        map.addLayer({
-            id: 'golf-layer', type: 'fill', source: 'golf-src',
-            paint: {
-                'fill-color': ['match', ['get', 'type'],
-                    'green', '#00ff00', 'bunker', '#f4ff81', 'fairway', '#76ff03', 'water', '#00b0ff', '#ffffff'],
-                'fill-opacity': 0.25
-            }
-        });
     }
 
     function toggleMeasureMode() {

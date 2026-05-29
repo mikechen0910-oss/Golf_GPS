@@ -10,7 +10,6 @@
     });
 
     async function initPage() {
-        initHoleSelectOptions();
         try {
             await loadCourseData();
         } catch (e) {

@@ -16,7 +16,6 @@
     <div class="row">
         <button class="btn btn-blue" onclick="locateGPS()">📍 我的位置</button>
         <button class="btn btn-orange" onclick="findCourses()">⛳ 找尋球場</button>
-        <button class="btn btn-green" onclick="scanFacilities()">🌿 掃描設施</button>
         <button class="btn btn-blue" onclick="toggleScorecard()">📋 分數卡</button>
     </div>
     <div class="row">
@@ -28,12 +27,6 @@
     <div class="row" id="routing-row" style="display:none;">
         <select id="routing-select" onchange="handleRoutingChange()"></select>
     </div>
-    <div class="row">
-        <select id="hole-select" onchange="handleHoleSelectChange()">
-            <option value="all">-- 顯示全場設施 (Hole All) --</option>
-        </select>
-    </div>
-
     <div class="display-card" id="dist-card" onclick="toggleMeasureMode()">
         <div><span class="dist-val" id="dist-out">--</span><span style="color:#888; margin-left:5px; font-weight:bold;">YDS</span></div>
         <div style="text-align:right">
