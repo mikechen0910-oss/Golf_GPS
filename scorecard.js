@@ -1,4 +1,4 @@
-﻿    function loadScorecardData() {
+    function loadScorecardData() {
         if (!scorecardData || !Array.isArray(scorecardData.holes)) return;
         try {
             const saved = localStorage.getItem(getScorecardStorageKey());
@@ -11,10 +11,10 @@
                         hole.putts = savedHole.putts;
                     }
                 });
-                console.log('??∪歇??嚗? + currentCourse);
+                console.log('分數卡已加載：' + currentCourse);
             }
         } catch (e) {
-            console.error('????∪仃??', e);
+            console.error('加載分數卡失敗:', e);
         }
     }
 
@@ -22,11 +22,11 @@
         try {
             const toSave = JSON.parse(JSON.stringify(scorecardData));
             localStorage.setItem(getScorecardStorageKey(), JSON.stringify(toSave));
-            setInfo('? ??∪歇?怠?嚗摰魚嚗?);
-            console.log('??⊥摮?' + getScorecardStorageKey());
+            setInfo('💾 分數卡已暫存（未完賽）');
+            console.log('分數卡暫存：' + getScorecardStorageKey());
         } catch (e) {
-            console.error('?怠???∪仃??', e);
-            setInfo('???怠?憭望?');
+            console.error('暫存分數卡失敗:', e);
+            setInfo('❌ 暫存失敗');
         }
     }
 
@@ -34,11 +34,11 @@
         const totals = calculateScoreTotals();
 
         if (totals.playedCount === 0) {
-            alert('隢撠撓?乩?????蝮曉???鞈?);
+            alert('請至少輸入一個洞的成績後再完賽');
             return;
         }
 
-        const confirmed = confirm(`蝣箏?閬?鞈賢?嚗n蝮賣▼?賂?${totals.totalStrokes}嚗?蝮橘?${totals.totalDiffLabel}`);
+        const confirmed = confirm(`確定要完賽嗎？\n總桿數：${totals.totalStrokes}，成績：${totals.totalDiffLabel}`);
         if (!confirmed) return;
 
         try {
@@ -76,12 +76,12 @@
             });
 
             renderScorecard();
-            setInfo(`??摰魚撌脖?摮?蝮賣▼?賂?${totals.totalStrokes}`);
+            setInfo(`✅ 完賽已保存！總桿數：${totals.totalStrokes}`);
 
-            console.log('??∪?鞈賭?摮?', historyRecord);
+            console.log('分數卡完賽保存：', historyRecord);
         } catch (e) {
-            console.error('摰魚靽?憭望?:', e);
-            setInfo('??摰魚靽?憭望?');
+            console.error('完賽保存失敗:', e);
+            setInfo('❌ 完賽保存失敗');
         }
     }
 
@@ -98,17 +98,17 @@
 
             const historyList = document.getElementById('history-list');
             if (history.length === 0) {
-                historyList.innerHTML = '<p style="color: #666; text-align: center;">?怎甇瑕蝝??/p>';
+                historyList.innerHTML = '<p style="color: #666; text-align: center;">暫無歷史紀錄</p>';
             } else {
                 historyList.innerHTML = history.map(record => `
                     <div class="history-item" onclick="showHistoryDetail('${record.id}')">
                         <div class="history-item-title">${record.courseName}${record.routingName ? ' - ' + record.routingName : ''}</div>
-                        <div class="history-item-date">?? ${record.date}</div>
+                        <div class="history-item-date">📅 ${record.date}</div>
                         <div class="history-item-stats">
-                            <span class="history-item-stat">??儭?獢踵: ${record.totals.totalStrokes}</span>
-                            <span class="history-item-stat">?? ${record.totals.totalDiffLabel}</span>
-                            <span class="history-item-stat">? ${record.totals.playedCount}/18 瘣?/span>
-                            <span class="history-item-stat">???冽▼: ${record.totals.totalPutts}</span>
+                            <span class="history-item-stat">🏌️ 桿數: ${record.totals.totalStrokes}</span>
+                            <span class="history-item-stat">📍 ${record.totals.totalDiffLabel}</span>
+                            <span class="history-item-stat">🎯 ${record.totals.playedCount}/18 洞</span>
+                            <span class="history-item-stat">⛳ 推桿: ${record.totals.totalPutts}</span>
                         </div>
                     </div>
                 `).join('');
@@ -116,8 +116,8 @@
 
             document.getElementById('historyModal').style.display = 'block';
         } catch (e) {
-            console.error('憿舐內甇瑕憭望?:', e);
-            alert('?⊥?憿舐內甇瑕蝝??);
+            console.error('顯示歷史失敗:', e);
+            alert('無法顯示歷史紀錄');
         }
     }
 
@@ -141,10 +141,10 @@
 
             let statsHtml = `
                 <div class="scorecard-summary">
-                    <span>蝮賣▼?賂?${totals.totalStrokes}</span>
-                    <span>?蜀嚗?{totals.totalDiffLabel}</span>
-                    <span>撌脣????賂?${totals.playedCount}/18</span>
-                    <span>蝮賣獢選?${totals.totalPutts}</span>
+                    <span>總桿數：${totals.totalStrokes}</span>
+                    <span>成績：${totals.totalDiffLabel}</span>
+                    <span>已完成洞數：${totals.playedCount}/18</span>
+                    <span>總推桿：${totals.totalPutts}</span>
                 </div>
             `;
 
@@ -170,15 +170,15 @@
                 <table class="scorecard-table">
                     <thead>
                         <tr>
-                            <th>瘣?</th>
+                            <th>洞號</th>
                             <th>Par</th>
-                            <th>蝣潭</th>
-                            <th>獢踵</th>
-                            <th>撌格</th>
-                            <th>?冽▼</th>
+                            <th>碼數</th>
+                            <th>桿數</th>
+                            <th>差數</th>
+                            <th>推桿</th>
                         </tr>
                     </thead>
-                    <tbody>${rows || '<tr><td colspan="6" style="text-align: center;">?⊥?蝮?/td></tr>'}</tbody>
+                    <tbody>${rows || '<tr><td colspan="6" style="text-align: center;">無成績</td></tr>'}</tbody>
                 </table>
             `;
 
@@ -186,7 +186,7 @@
             document.getElementById('historyDetailModal').style.display = 'block';
             document.getElementById('historyModal').style.display = 'none';
         } catch (e) {
-            console.error('憿舐內閰喟敦蝝?仃??', e);
+            console.error('顯示詳細紀錄失敗:', e);
         }
     }
 
@@ -211,15 +211,15 @@
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
 
-            setInfo('? JSON 瑼?撌脖?頛?);
+            setInfo('📥 JSON 檔案已下載');
         } catch (e) {
-            console.error('?臬憭望?:', e);
-            alert('?臬憭望?');
+            console.error('匯出失敗:', e);
+            alert('匯出失敗');
         }
     }
 
     function deleteHistoryRecord() {
-        if (!confirm('蝣箏?閬?斗迨蝝??嚗?)) return;
+        if (!confirm('確定要刪除此紀錄嗎？')) return;
 
         try {
             const historyKey = getHistoryStorageKey();
@@ -239,27 +239,27 @@
 
             closeHistoryDetail();
             showHistory();
-            setInfo('??蝝?歇?芷');
+            setInfo('✅ 紀錄已刪除');
         } catch (e) {
-            console.error('?芷憭望?:', e);
-            alert('?芷憭望?');
+            console.error('刪除失敗:', e);
+            alert('刪除失敗');
         }
     }
 
     function clearAllHistory() {
-        if (!confirm('蝣箏?閬??斗??風?脩???嚗迨???⊥??Ｗ儔??)) return;
+        if (!confirm('確定要清除所有歷史紀錄嗎？此操作無法恢復。')) return;
 
         try {
             const historyKey = getHistoryStorageKey();
             localStorage.removeItem(historyKey);
 
             const historyList = document.getElementById('history-list');
-            historyList.innerHTML = '<p style="color: #666; text-align: center;">?怎甇瑕蝝??/p>';
+            historyList.innerHTML = '<p style="color: #666; text-align: center;">暫無歷史紀錄</p>';
 
-            setInfo('????風?脩??歇皜');
+            setInfo('✅ 所有歷史紀錄已清除');
         } catch (e) {
-            console.error('皜甇瑕憭望?:', e);
-            alert('皜憭望?');
+            console.error('清除歷史失敗:', e);
+            alert('清除失敗');
         }
     }
 
@@ -273,7 +273,7 @@
     }
 
     function clearScorecard() {
-        const confirmed = confirm('蝣箏?閬??斗????貉???嚗?);
+        const confirmed = confirm('確定要清除所有分數記錄嗎？');
         if (!confirmed) return;
 
         scorecardData.holes.forEach(hole => {
@@ -282,14 +282,14 @@
         });
         localStorage.removeItem(getScorecardStorageKey());
         renderScorecard();
-        setInfo('??????詨歇皜');
+        setInfo('✅ 所有分數已清除');
     }
 
     function toggleScorecard() {
         scorecardVisible = !scorecardVisible;
         document.getElementById('scorecard-panel').style.display = scorecardVisible ? 'block' : 'none';
         if (scorecardVisible) {
-            document.getElementById('coursecard-title').innerText = scorecardData.courseName + (scorecardData.routingName ? ` (${scorecardData.routingName})` : '') + ' - ???;
+            document.getElementById('coursecard-title').innerText = scorecardData.courseName + (scorecardData.routingName ? ` (${scorecardData.routingName})` : '') + ' - 分數卡';
             renderScorecard();
         }
     }
@@ -306,11 +306,11 @@
         const totals = calculateScoreTotals();
 
         summary.innerHTML = `
-            <span>??迂嚗?{scorecardData.courseName}</span>
-            <span>${scorecardData.front9Label || '??'}嚗?{totals.frontPlayedCount ? totals.frontStrokes : '--'} (${totals.frontPlayedCount} 瘣? / ${totals.frontPlayedCount ? totals.frontDiffLabel : '--'}</span>
-            <span>${scorecardData.back9Label || '敺?'}嚗?{totals.backPlayedCount ? totals.backStrokes : '--'} (${totals.backPlayedCount} 瘣? / ${totals.backPlayedCount ? totals.backDiffLabel : '--'}</span>
-            <span>蝮賣▼?賂?${totals.playedCount ? totals.totalStrokes : '--'} (${totals.playedCount ? totals.totalDiffLabel : '--'})</span>
-            <span>蝮賣獢踵嚗?{totals.puttsCount ? totals.totalPutts : '--'}</span>
+            <span>球場名稱：${scorecardData.courseName}</span>
+            <span>${scorecardData.front9Label || '前九'}：${totals.frontPlayedCount ? totals.frontStrokes : '--'} (${totals.frontPlayedCount} 洞) / ${totals.frontPlayedCount ? totals.frontDiffLabel : '--'}</span>
+            <span>${scorecardData.back9Label || '後九'}：${totals.backPlayedCount ? totals.backStrokes : '--'} (${totals.backPlayedCount} 洞) / ${totals.backPlayedCount ? totals.backDiffLabel : '--'}</span>
+            <span>總桿數：${totals.playedCount ? totals.totalStrokes : '--'} (${totals.playedCount ? totals.totalDiffLabel : '--'})</span>
+            <span>總推桿數：${totals.puttsCount ? totals.totalPutts : '--'}</span>
         `;
 
         const rows = scorecardData.holes.map(h => {
@@ -327,7 +327,7 @@
                     <td>${h.distances.red}</td>
                     <td>
                         <div style="display:flex; align-items:center; justify-content:center; gap:4px;">
-                            <button data-hole="${h.number}" data-field="score" data-action="minus" style="width:28px; height:28px; padding:0; border-radius:4px; border:1px solid #ccc; background:#fafafa; cursor:pointer; font-weight:bold;">??/button>
+                            <button data-hole="${h.number}" data-field="score" data-action="minus" style="width:28px; height:28px; padding:0; border-radius:4px; border:1px solid #ccc; background:#fafafa; cursor:pointer; font-weight:bold;">−</button>
                             <input type="number" min="1" max="15" value="${scoreValue}" data-hole="${h.number}" data-field="score" class="hole-input" style="width:50px; padding:6px; border-radius:4px; border:1px solid #ddd; text-align:center;">
                             <button data-hole="${h.number}" data-field="score" data-action="plus" style="width:28px; height:28px; padding:0; border-radius:4px; border:1px solid #ccc; background:#fafafa; cursor:pointer; font-weight:bold;">+</button>
                             ${getScoreIcon(h)}
@@ -335,7 +335,7 @@
                     </td>
                     <td>
                         <div style="display:flex; align-items:center; justify-content:center; gap:4px;">
-                            <button data-hole="${h.number}" data-field="putts" data-action="minus" style="width:28px; height:28px; padding:0; border-radius:4px; border:1px solid #ccc; background:#fafafa; cursor:pointer; font-weight:bold;">??/button>
+                            <button data-hole="${h.number}" data-field="putts" data-action="minus" style="width:28px; height:28px; padding:0; border-radius:4px; border:1px solid #ccc; background:#fafafa; cursor:pointer; font-weight:bold;">−</button>
                             <input type="number" min="0" max="10" value="${puttsValue}" data-hole="${h.number}" data-field="putts" class="hole-input" style="width:50px; padding:6px; border-radius:4px; border:1px solid #ddd; text-align:center;">
                             <button data-hole="${h.number}" data-field="putts" data-action="plus" style="width:28px; height:28px; padding:0; border-radius:4px; border:1px solid #ccc; background:#fafafa; cursor:pointer; font-weight:bold;">+</button>
                         </div>
@@ -347,26 +347,26 @@
             <table class="scorecard-table">
                 <thead>
                     <tr>
-                        <th>瘣?</th>
-                        <th>璅?獢?/th>
-                        <th>獢踹榆</th>
-                        <th>??</th>
-                        <th>?賣?</th>
-                        <th>蝝?</th>
-                        <th>獢踵</th>
-                        <th>?冽▼</th>
+                        <th>洞號</th>
+                        <th>標準桿</th>
+                        <th>桿差</th>
+                        <th>藍標</th>
+                        <th>白標</th>
+                        <th>紅標</th>
+                        <th>桿數</th>
+                        <th>推桿</th>
                     </tr>
                 </thead>
                 <tbody>${rows}</tbody>
                 <tfoot>
                     <tr>
-                        <td colspan="3">${scorecardData.front9Label || '??'}</td>
+                        <td colspan="3">${scorecardData.front9Label || '前九'}</td>
                         <td>${scorecardData.front9Totals.blue}</td>
                         <td>${scorecardData.front9Totals.white}</td>
                         <td>${scorecardData.front9Totals.red}</td>
                     </tr>
                     <tr>
-                        <td colspan="3">${scorecardData.back9Label || '敺?'}</td>
+                        <td colspan="3">${scorecardData.back9Label || '後九'}</td>
                         <td>${scorecardData.back9Totals.blue}</td>
                         <td>${scorecardData.back9Totals.white}</td>
                         <td>${scorecardData.back9Totals.red}</td>
@@ -427,15 +427,15 @@
         document.getElementById('hole-select').value = number;
         renderFeatures();
         renderScorecard();
-        setInfo(`撌脤?洵 ${number} 瘣);
+        setInfo(`已選擇第 ${number} 洞`);
     }
 
     function updateHoleValue(number, field, value) {
         const hole = scorecardData.holes.find(h => h.number === number);
         hole[field] = value ? Number(value) : null;
         renderScorecard();
-        const label = field === 'score' ? '獢踵' : '?冽▼';
-        setInfo(`撌脫?啁洵 ${number} 瘣?${label}嚗?{value || '?芾撓??}`);
+        const label = field === 'score' ? '桿數' : '推桿';
+        setInfo(`已更新第 ${number} 洞 ${label}：${value || '未輸入'}`);
     }
 
     function calculateScoreTotals() {
@@ -481,32 +481,32 @@
         const size = 18;
         const baseStyle = 'vertical-align:middle; margin-left:8px; display:inline-block;';
         if (diff <= -2) {
-            return `<span style="${baseStyle}" title="雿璅?獢?(Eagle+)">` +
+            return `<span style="${baseStyle}" title="低於標準桿 (Eagle+)">` +
                          `<svg width="${size}" height="${size}" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">` +
                          `<circle cx="12" cy="12" r="9" fill="none" stroke="#0b5" stroke-width="1.6"/>` +
                          `<circle cx="12" cy="12" r="5" fill="none" stroke="#0b5" stroke-width="1.4"/>` +
                          `</svg></span>`;
         }
         if (diff === -1) {
-            return `<span style="${baseStyle}" title="雿璅?獢?(Birdie)">` +
+            return `<span style="${baseStyle}" title="低於標準桿 (Birdie)">` +
                          `<svg width="${size}" height="${size}" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">` +
                          `<circle cx="12" cy="12" r="7" fill="none" stroke="#09f" stroke-width="1.8"/>` +
                          `</svg></span>`;
         }
         if (diff === 0) {
-            return `<span style="${baseStyle}" title="撟單?皞▼">` +
+            return `<span style="${baseStyle}" title="平標準桿">` +
                          `<svg width="${size}" height="${size}" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">` +
                          `<polygon points="12,5 19,18 5,18" fill="none" stroke="#333" stroke-width="1.6"/>` +
                          `</svg></span>`;
         }
         if (diff === 1) {
-            return `<span style="${baseStyle}" title="擃璅?獢?(Bogey)">` +
+            return `<span style="${baseStyle}" title="高於標準桿 (Bogey)">` +
                          `<svg width="${size}" height="${size}" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">` +
                          `<rect x="6" y="6" width="12" height="12" fill="none" stroke="#f55" stroke-width="1.6"/>` +
                          `</svg></span>`;
         }
         if (diff >= 2) {
-            return `<span style="${baseStyle}" title="擃璅?獢?(+${diff})">` +
+            return `<span style="${baseStyle}" title="高於標準桿 (+${diff})">` +
                          `<svg width="${size}" height="${size}" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">` +
                          `<rect x="3" y="3" width="18" height="18" fill="none" stroke="#f00" stroke-width="1.4"/>` +
                          `<rect x="8" y="8" width="8" height="8" fill="none" stroke="#f00" stroke-width="1.2"/>` +

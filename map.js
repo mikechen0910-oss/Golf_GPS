@@ -1,4 +1,4 @@
-﻿let map = null;
+let map = null;
     try {
         map = new maplibregl.Map({
             container: 'map',
@@ -9,7 +9,7 @@
                         "type": "raster",
                         "tiles": ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
                         "tileSize": 256,
-                        "attribution": "Tiles 穢 Esri",
+                        "attribution": "Tiles © Esri",
                         "maxzoom": 18
                     }
                 },
@@ -30,22 +30,22 @@
 
         map.on('load', () => {
             try { map.resize(); } catch(e){}
-            setInfo('?啣?頛摰?');
+            setInfo('地圖載入完成');
         });
 
         window.addEventListener('resize', () => { try { if (map) map.resize(); } catch(e){} });
     } catch (e) {
         console.error('Map init error', e);
-        setInfo('?啣????仃??' + (e && e.message ? e.message : e));
+        setInfo('地圖初始化失敗：' + (e && e.message ? e.message : e));
         const m = document.getElementById('map');
-        if (m) m.innerHTML = '<div style="color:#fff; padding:20px; text-align:center;">?啣?頛憭望?嚗??亦??汗?冽?嗅 (Console) 隞亙?敺隤斤敦蝭??/div>';
+        if (m) m.innerHTML = '<div style="color:#fff; padding:20px; text-align:center;">地圖載入失敗，請查看瀏覽器控制台 (Console) 以取得錯誤細節。</div>';
     }
 
     function locateGPS() {
-        setInfo("?儭?銵?摰?銝?..");
+        setInfo("🛰️ 衛星定位中...");
 
         if (!navigator.geolocation) {
-            setInfo("?函??汗?其??舀?啁?摰?");
+            setInfo("您的瀏覽器不支援地理定位");
             return;
         }
 
@@ -68,7 +68,7 @@
                         el.className = 'user-marker';
                         userMarker = new maplibregl.Marker({ element: el }).setLngLat([avgLng, avgLat]).addTo(map);
                         map.flyTo({ center: [avgLng, avgLat], zoom: 18, pitch: 50, speed: 1.2 });
-                        setInfo(`雿蔭撌脫??(撟喳? ${positions.length} 甈∟???`);
+                        setInfo(`位置已更新 (平均 ${positions.length} 次讀取)`);
                         startPositionWatch();
                         setTimeout(() => getWeatherAtLocation([avgLng, avgLat]), 1500);
                     }
@@ -76,15 +76,15 @@
                 (err) => {
                     attempts++;
                     let errMsg = '';
-                    if (err.code === 1) errMsg = '摰?鋡急?蝯?隢閮剖?銝剖?閮曹?蝵桀???;
-                    else if (err.code === 2) errMsg = '?⊥???雿蔭鞈?';
-                    else if (err.code === 3) errMsg = '摰??暹?嚗??券?????閰?;
+                    if (err.code === 1) errMsg = '定位被拒絕，請在設定中允許位置存取';
+                    else if (err.code === 2) errMsg = '無法取得位置資訊';
+                    else if (err.code === 3) errMsg = '定位逾時，請在開闊區域重試';
                     else errMsg = err.message;
 
                     if (attempts < maxAttempts) {
                         setTimeout(getPosition, 1500);
                     } else {
-                        setInfo(`摰?憭望? (${errMsg})`);
+                        setInfo(`定位失敗 (${errMsg})`);
                     }
                 },
                 { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
@@ -102,7 +102,7 @@
                 }
             },
             (err) => {
-                console.log('雿蔭????航炊:', err);
+                console.log('位置監視錯誤:', err);
             },
             {
                 enableHighAccuracy: true,
@@ -116,7 +116,7 @@
         try {
             const lat = coord[1];
             const lon = coord[0];
-            setInfo('??憭拇除鞈?...');
+            setInfo('取得天氣資料...');
             const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&timezone=auto`;
             const res = await fetch(url);
             if (!res.ok) throw new Error('Weather API error');
@@ -130,18 +130,18 @@
                     return dirs[Math.round(((deg %= 360) < 0 ? deg + 360 : deg) / 45) % 8];
                 })(windDir);
                 drawWindDirection({ lng: lon, lat: lat }, windDir, windSpeed, windDirection);
-                setInfo(`憸典? ${windDirection} (${Math.round(windDir)}簞)嚗◢??${windSpeed} km/h`);
+                setInfo(`風向 ${windDirection} (${Math.round(windDir)}°)，風速 ${windSpeed} km/h`);
             } else {
-                setInfo('?⊥???憭拇除鞈?');
+                setInfo('無法取得天氣資訊');
             }
         } catch (e) {
             console.error('getWeatherAtLocation error', e);
-            setInfo('憭拇除鞈??脣?憭望?');
+            setInfo('天氣資訊獲取失敗');
         }
     }
 
     async function findCourses() {
-        setInfo("?? ?????...");
+        setInfo("🔍 搜尋附近球場...");
         courseMarkers.forEach(m => m.remove());
         courseMarkers = [];
         const b = map.getBounds();
@@ -156,7 +156,7 @@
                 if (lat && lon && el.tags && el.tags.name) {
                     const div = document.createElement('div');
                     div.className = 'map-label';
-                    div.innerHTML = `??${el.tags.name}`;
+                    div.innerHTML = `⛳ ${el.tags.name}`;
                     div.onclick = () => {
                         map.flyTo({ center: [lon, lat], zoom: 18, pitch: 45 });
                         setTimeout(scanFacilities, 1000);
@@ -165,12 +165,12 @@
                     courseMarkers.push(m);
                 }
             });
-            setInfo(`?潛 ${data.elements.length} ???循);
-        } catch (e) { setInfo("????暹?"); }
+            setInfo(`發現 ${data.elements.length} 個球場`);
+        } catch (e) { setInfo("連線逾時"); }
     }
 
     async function scanFacilities() {
-        setInfo("? ???啣耦?豢?...");
+        setInfo("🌿 疊加地形數據...");
         const b = map.getBounds();
         const bbox = `${b.getSouth()},${b.getWest()},${b.getNorth()},${b.getEast()}`;
         const query = `[out:json];(nwr["golf"](${bbox});nwr["natural"="water"](${bbox}););out geom;`;
@@ -189,8 +189,8 @@
                 }
             });
             renderFeatures();
-            setInfo(`閮剜撌脣?甇?(3D) - ?潛 ${Object.keys(holePositions).length} ??`);
-        } catch (e) { setInfo("??憭望?"); }
+            setInfo(`設施已同步 (3D) - 發現 ${Object.keys(holePositions).length} 個洞`);
+        } catch (e) { setInfo("掃描失敗"); }
     }
 
     function renderFeatures() {
@@ -225,12 +225,12 @@
         isMeasureMode = !isMeasureMode;
         const status = document.getElementById('status-title');
         if (isMeasureMode) {
-            if (status) status.innerText = '皜祈????';
-            setInfo('隢?啣?銝??詨??隞交葫????);
+            if (status) status.innerText = '測距功能開啟';
+            setInfo('請於地圖上點選兩個點以測量距離');
             clearMeasure();
         } else {
-            if (status) status.innerText = '皜祈????';
-            setInfo('?舀瘛勗惜蝮格?∟?閬箸撅?);
+            if (status) status.innerText = '測距功能關閉';
+            setInfo('支援深層縮放無視覺斷層');
             clearMeasure();
         }
     }
@@ -254,7 +254,7 @@
         const el = document.createElement('div');
         el.innerHTML = svg;
         el.style.cursor = 'pointer';
-        el.title = `憸典?: ${windDirection}`;
+        el.title = `風向: ${windDirection}`;
 
         windMarker = new maplibregl.Marker({ element: el }).setLngLat(pos).addTo(map);
     }
@@ -272,7 +272,7 @@
             }
             const out = document.getElementById('dist-out');
             if (out) out.innerText = '--';
-            setInfo('皜祈?撌脫???);
+            setInfo('測距已清除');
         } catch(e) { console.error('clearMeasure error', e); }
     }
 
@@ -282,21 +282,21 @@
             windMarker.remove();
             windMarker = null;
         }
-        setInfo("????歇皜");
+        setInfo("所有疊加已清除");
     }
 
     function shareLocation() {
         if (!userMarker) {
-            setInfo("隢?摰??函?雿蔭");
+            setInfo("請先定位您的位置");
             return;
         }
         const pos = userMarker.getLngLat();
-        // 靽格迤?? {} 憭扳??曇?摮葡蝯??航炊
+        // 修正原先 {} 大括號擺放與字串結構錯誤
         const url = `https://www.google.com/maps?q=${pos.lat},${pos.lng}`;
         navigator.clipboard.writeText(url).then(() => {
-            setInfo("雿蔭???撌脰?鋆賢?芾票蝪?);
+            setInfo("位置連結已複製到剪貼簿");
         }).catch(() => {
-            setInfo(`?澈???: ${url}`);
+            setInfo(`分享連結: ${url}`);
         });
     }
 
@@ -313,7 +313,7 @@
                 const dist = new maplibregl.LngLat(measurePoints[0][0], measurePoints[0][1]).distanceTo(new maplibregl.LngLat(measurePoints[1][0], measurePoints[1][1]));
                 document.getElementById('dist-out').innerText = (dist * 1.09361).toFixed(0);
 
-                // 鋆?嚗?啣?銝?甇?鼓鋆賣葫頝?頝∠? (measure-line)
+                // 補齊：在地圖上真正繪製測距軌跡線 (measure-line)
                 map.addSource('measure-src', {
                     'type': 'geojson',
                     'data': {
