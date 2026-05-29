@@ -6,6 +6,20 @@
       "address": "No.13, Yushanli, Guanxi Township, Hsinchu County, Taiwan",
       "phone": "03-547-6288",
       "fax": "03-547-6597",
+      "courseLinks": [
+        {
+          "label": "官方球道資訊 1-10",
+          "url": "https://www.suncitygolf.com.tw/tw/modules/cadch/course01",
+          "type": "fairwayInfo",
+          "official": true
+        },
+        {
+          "label": "官方球道資訊 11-18",
+          "url": "https://www.suncitygolf.com.tw/tw/modules/cadch/course02",
+          "type": "fairwayInfo",
+          "official": true
+        }
+      ],
       "totalLengthYards": 6812,
       "par": 72,
       "front9Totals": { "blue": 3388, "white": 3209, "red": 2886, "par": 36 },
@@ -37,6 +51,14 @@
       "address": "No.104, Kengzikou, Xinfeng Township, Hsinchu County, Taiwan",
       "phone": "03-559-6141",
       "fax": "",
+      "courseLinks": [
+        {
+          "label": "官方球道圖",
+          "url": "https://www.hgcc.com.tw/fairway",
+          "type": "fairwayMap",
+          "official": true
+        }
+      ],
       "routingOptions": [
         { "id": "west_east", "name": "West + East", "frontZone": "west", "backZone": "east" },
         { "id": "west_central", "name": "West + Central", "frontZone": "west", "backZone": "central" },
@@ -101,6 +123,15 @@
       "address": "Taipei, Taiwan",
       "phone": "",
       "fax": "",
+      "courseLinks": [
+        {
+          "label": "球場資訊",
+          "url": "https://www.gcs.org.tw/gcs/m_tatun.html",
+          "type": "courseInfo",
+          "official": false,
+          "note": "未找到可驗證的官方球道資訊頁，暫以球場事業協進會資料作為備援。"
+        }
+      ],
       "totalLengthYards": 6468,
       "par": 72,
       "front9Totals": { "blue": 3424, "white": 3266, "red": 2995, "par": 36 },
@@ -125,6 +156,159 @@
         { "number": 17, "par": 3, "hdcp": 10, "distances": { "blue": 178, "white": 168, "red": 163 }, "score": null, "putts": null },
         { "number": 18, "par": 5, "hdcp": 14, "distances": { "blue": 512, "white": 497, "red": 442 }, "score": null, "putts": null }
       ]
+    },
+    "baoshan": {
+      "courseName": "寶山高爾夫球場",
+      "englishName": "Pao Shan Golf Club",
+      "address": "台灣 308 新竹縣寶山鄉寶新路318號",
+      "phone": "03-576-2888",
+      "fax": "03-576-2605",
+      "courseLinks": [
+        {
+          "label": "官方球道介紹",
+          "url": "https://www.pao-shan.com.tw/course/",
+          "type": "fairwayInfo",
+          "official": true
+        }
+      ],
+      "totalLengthYards": 7007,
+      "par": 72,
+      "front9Totals": { "blue": 3537, "white": 3235, "red": 2616, "par": 36 },
+      "back9Totals": { "blue": 3470, "white": 3194, "red": 2585, "par": 36 },
+      "holes": [
+        { "number": 1, "par": 5, "hdcp": 11, "distances": { "blue": 556, "white": 540, "red": 429 }, "score": null, "putts": null },
+        { "number": 2, "par": 4, "hdcp": 5, "distances": { "blue": 396, "white": 360, "red": 275 }, "score": null, "putts": null },
+        { "number": 3, "par": 4, "hdcp": 9, "distances": { "blue": 405, "white": 359, "red": 312 }, "score": null, "putts": null },
+        { "number": 4, "par": 4, "hdcp": 3, "distances": { "blue": 420, "white": 405, "red": 327 }, "score": null, "putts": null },
+        { "number": 5, "par": 3, "hdcp": 17, "distances": { "blue": 208, "white": 170, "red": 130 }, "score": null, "putts": null },
+        { "number": 6, "par": 5, "hdcp": 13, "distances": { "blue": 505, "white": 458, "red": 409 }, "score": null, "putts": null },
+        { "number": 7, "par": 4, "hdcp": 1, "distances": { "blue": 415, "white": 378, "red": 307 }, "score": null, "putts": null },
+        { "number": 8, "par": 3, "hdcp": 15, "distances": { "blue": 216, "white": 166, "red": 126 }, "score": null, "putts": null },
+        { "number": 9, "par": 4, "hdcp": 7, "distances": { "blue": 416, "white": 399, "red": 301 }, "score": null, "putts": null },
+        { "number": 10, "par": 4, "hdcp": 10, "distances": { "blue": 350, "white": 328, "red": 286 }, "score": null, "putts": null },
+        { "number": 11, "par": 5, "hdcp": 12, "distances": { "blue": 555, "white": 532, "red": 435 }, "score": null, "putts": null },
+        { "number": 12, "par": 4, "hdcp": 6, "distances": { "blue": 393, "white": 367, "red": 321 }, "score": null, "putts": null },
+        { "number": 13, "par": 3, "hdcp": 16, "distances": { "blue": 242, "white": 202, "red": 129 }, "score": null, "putts": null },
+        { "number": 14, "par": 4, "hdcp": 4, "distances": { "blue": 425, "white": 398, "red": 293 }, "score": null, "putts": null },
+        { "number": 15, "par": 5, "hdcp": 14, "distances": { "blue": 541, "white": 511, "red": 420 }, "score": null, "putts": null },
+        { "number": 16, "par": 4, "hdcp": 2, "distances": { "blue": 390, "white": 342, "red": 276 }, "score": null, "putts": null },
+        { "number": 17, "par": 3, "hdcp": 18, "distances": { "blue": 173, "white": 142, "red": 86 }, "score": null, "putts": null },
+        { "number": 18, "par": 4, "hdcp": 8, "distances": { "blue": 401, "white": 372, "red": 339 }, "score": null, "putts": null }
+      ],
+      "source": {
+        "url": "http://www.golf.tw/course/3?componentId=56",
+        "note": "Data parsed from golf.tw Pao Shan Golf Club page"
+      }
+    },
+    "taipei": {
+      "courseName": "台北高爾夫俱樂部",
+      "englishName": "Taipei Golf Club",
+      "address": "台灣 338 桃園縣蘆竹鄉坑子村赤塗崎34之1號",
+      "phone": "03-324-4856",
+      "fax": "03-324-3219",
+      "courseLinks": [
+        {
+          "label": "官方球道攻略 A區",
+          "url": "https://www.taipeigolf.com.tw/page/fairway.asp",
+          "type": "fairwayInfo",
+          "official": true
+        },
+        {
+          "label": "官方球道攻略 B區",
+          "url": "https://www.taipeigolf.com.tw/page/fairway-2.asp",
+          "type": "fairwayInfo",
+          "official": true
+        },
+        {
+          "label": "官方球道攻略 C區",
+          "url": "https://www.taipeigolf.com.tw/page/fairway-3.asp",
+          "type": "fairwayInfo",
+          "official": true
+        },
+        {
+          "label": "官方球道攻略 D區",
+          "url": "https://www.taipeigolf.com.tw/page/fairway-4.asp",
+          "type": "fairwayInfo",
+          "official": true
+        },
+        {
+          "label": "官方球場簡介",
+          "url": "https://www.taipeigolf.com.tw/page/about.asp",
+          "type": "courseInfo",
+          "official": true
+        }
+      ],
+      "routingOptions": [
+        { "id": "a_b", "name": "A + B", "frontZone": "a", "backZone": "b" },
+        { "id": "c_d", "name": "C + D", "frontZone": "c", "backZone": "d" }
+      ],
+      "defaultRouting": "a_b",
+      "zones": {
+        "a": {
+          "name": "A",
+          "total": { "blue": 3504, "white": 3319, "red": 2946, "par": 36 },
+          "holes": [
+            { "zoneHole": 1, "par": 5, "hdcp": 2, "blue": 557, "white": 535, "red": 516 },
+            { "zoneHole": 2, "par": 5, "hdcp": 6, "blue": 536, "white": 505, "red": 450 },
+            { "zoneHole": 3, "par": 4, "hdcp": 9, "blue": 354, "white": 340, "red": 290 },
+            { "zoneHole": 4, "par": 3, "hdcp": 7, "blue": 178, "white": 164, "red": 130 },
+            { "zoneHole": 5, "par": 4, "hdcp": 3, "blue": 464, "white": 433, "red": 390 },
+            { "zoneHole": 6, "par": 3, "hdcp": 8, "blue": 166, "white": 144, "red": 120 },
+            { "zoneHole": 7, "par": 4, "hdcp": 1, "blue": 420, "white": 401, "red": 338 },
+            { "zoneHole": 8, "par": 4, "hdcp": 5, "blue": 392, "white": 376, "red": 348 },
+            { "zoneHole": 9, "par": 4, "hdcp": 4, "blue": 437, "white": 421, "red": 364 }
+          ]
+        },
+        "b": {
+          "name": "B",
+          "total": { "blue": 3133, "white": 2907, "red": 2561, "par": 36 },
+          "holes": [
+            { "zoneHole": 1, "par": 5, "hdcp": 4, "blue": 524, "white": 494, "red": 454 },
+            { "zoneHole": 2, "par": 3, "hdcp": 6, "blue": 196, "white": 183, "red": 152 },
+            { "zoneHole": 3, "par": 4, "hdcp": 5, "blue": 297, "white": 289, "red": 221 },
+            { "zoneHole": 4, "par": 4, "hdcp": 2, "blue": 407, "white": 370, "red": 320 },
+            { "zoneHole": 5, "par": 4, "hdcp": 7, "blue": 287, "white": 267, "red": 216 },
+            { "zoneHole": 6, "par": 4, "hdcp": 3, "blue": 388, "white": 312, "red": 290 },
+            { "zoneHole": 7, "par": 3, "hdcp": 9, "blue": 138, "white": 114, "red": 100 },
+            { "zoneHole": 8, "par": 5, "hdcp": 8, "blue": 458, "white": 448, "red": 416 },
+            { "zoneHole": 9, "par": 4, "hdcp": 1, "blue": 438, "white": 430, "red": 392 }
+          ]
+        },
+        "c": {
+          "name": "C",
+          "total": { "blue": 3636, "white": 3439, "red": 3046, "par": 36 },
+          "holes": [
+            { "zoneHole": 1, "par": 4, "hdcp": 5, "blue": 378, "white": 362, "red": 348 },
+            { "zoneHole": 2, "par": 5, "hdcp": 1, "blue": 629, "white": 576, "red": 533 },
+            { "zoneHole": 3, "par": 4, "hdcp": 3, "blue": 437, "white": 417, "red": 317 },
+            { "zoneHole": 4, "par": 3, "hdcp": 6, "blue": 210, "white": 204, "red": 123 },
+            { "zoneHole": 5, "par": 4, "hdcp": 2, "blue": 424, "white": 391, "red": 364 },
+            { "zoneHole": 6, "par": 4, "hdcp": 4, "blue": 418, "white": 391, "red": 369 },
+            { "zoneHole": 7, "par": 5, "hdcp": 7, "blue": 532, "white": 523, "red": 483 },
+            { "zoneHole": 8, "par": 3, "hdcp": 8, "blue": 198, "white": 176, "red": 154 },
+            { "zoneHole": 9, "par": 4, "hdcp": 9, "blue": 410, "white": 399, "red": 355 }
+          ]
+        },
+        "d": {
+          "name": "D",
+          "total": { "blue": 3347, "white": 3079, "red": 2756, "par": 36 },
+          "holes": [
+            { "zoneHole": 1, "par": 4, "hdcp": 4, "blue": 398, "white": 387, "red": 365 },
+            { "zoneHole": 2, "par": 3, "hdcp": 5, "blue": 203, "white": 192, "red": 154 },
+            { "zoneHole": 3, "par": 4, "hdcp": 3, "blue": 434, "white": 390, "red": 354 },
+            { "zoneHole": 4, "par": 4, "hdcp": 8, "blue": 340, "white": 296, "red": 274 },
+            { "zoneHole": 5, "par": 4, "hdcp": 9, "blue": 327, "white": 316, "red": 300 },
+            { "zoneHole": 6, "par": 5, "hdcp": 7, "blue": 475, "white": 459, "red": 431 },
+            { "zoneHole": 7, "par": 5, "hdcp": 2, "blue": 551, "white": 540, "red": 475 },
+            { "zoneHole": 8, "par": 4, "hdcp": 1, "blue": 439, "white": 341, "red": 280 },
+            { "zoneHole": 9, "par": 3, "hdcp": 6, "blue": 180, "white": 158, "red": 123 }
+          ]
+        }
+      },
+      "source": {
+        "url": "http://www.golf.tw/course/2?componentId=44",
+        "note": "Data parsed from golf.tw Taipei Golf Club page"
+      }
     }
   }
 }

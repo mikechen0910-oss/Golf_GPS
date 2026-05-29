@@ -4,6 +4,7 @@
 
         .control-panel { background: white; padding: 12px; border-radius: 20px 20px 0 0; z-index: 900; box-shadow: 0 -5px 20px rgba(0,0,0,0.4); }
         .row { display: flex; gap: 8px; margin-bottom: 8px; }
+        .course-links-row { flex-wrap: wrap; }
         select { flex: 1; padding: 10px; border-radius: 8px; border: 2px solid var(--primary); font-size: 15px; font-weight: bold; background: #fff; outline: none; }
         
         .btn { border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 5px; flex: 1; user-select: none; touch-action: manipulation; }
@@ -12,6 +13,14 @@
         .btn-green { background: var(--primary); color: white; }
         .btn-red { background: #d32f2f; color: white; }
         .btn-purple { background: #7b1fa2; color: white; }
+        .course-link-btn {
+            color: white;
+            text-decoration: none;
+            min-height: 20px;
+        }
+        .course-link-secondary {
+            background: #455a64;
+        }
         
         .display-card { 
             background: #1a1a1a; color: #fff; padding: 12px; border-radius: 10px; 
